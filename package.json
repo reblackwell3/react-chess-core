@@ -1,0 +1,65 @@
+{
+  "name": "react-chess-core",
+  "version": "0.1.0",
+  "description": "Shared React chessboard theme, highlights, and browser Stockfish for puzzle and explorer kits",
+  "license": "MIT",
+  "author": "Robert Blackwell",
+  "main": "dist/index.js",
+  "module": "dist/index.esm.js",
+  "types": "dist/index.d.ts",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/reblackwell3/react-chess-core.git"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "rollup -c",
+    "copy:stockfish": "node scripts/copy-stockfish.mjs",
+    "prepare": "rollup -c",
+    "storybook": "storybook dev -p 6007",
+    "build-storybook": "storybook build",
+    "serve-storybook": "serve storybook-static",
+    "prepublishOnly": "npm run build"
+  },
+  "dependencies": {
+    "rollup": "^4.22.2",
+    "rollup-plugin-peer-deps-external": "^2.2.4",
+    "typescript": "^5.6.2"
+  },
+  "peerDependencies": {
+    "chess.js": "^1.0.0-beta.8",
+    "react": "^18.3.1",
+    "react-chessboard": "^4.7.1"
+  },
+  "devDependencies": {
+    "@chromatic-com/storybook": "^1.9.0",
+    "@rollup/plugin-commonjs": "^26.0.1",
+    "@rollup/plugin-node-resolve": "^15.2.3",
+    "@rollup/plugin-typescript": "^12.3.0",
+    "@storybook/addon-essentials": "^8.2.9",
+    "@storybook/addon-interactions": "^8.2.9",
+    "@storybook/addon-links": "^8.2.9",
+    "@storybook/addon-onboarding": "^8.2.9",
+    "@storybook/blocks": "^8.2.9",
+    "@storybook/preset-typescript": "^3.0.0",
+    "@storybook/react": "^8.2.9",
+    "@storybook/react-vite": "^8.2.9",
+    "@storybook/test": "^8.2.9",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.1",
+    "chess.js": "^1.0.0-beta.8",
+    "prop-types": "^15.8.1",
+    "react": "^18.3.1",
+    "react-chessboard": "^4.7.1",
+    "react-dom": "^18.3.1",
+    "storybook": "^8.2.9",
+    "storybook-dark-mode": "^4.0.2",
+    "vite-tsconfig-paths": "^5.0.1"
+  },
+  "optionalDependencies": {
+    "stockfish": "^18.0.7"
+  }
+}
