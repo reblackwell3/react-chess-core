@@ -18,7 +18,7 @@ Storybook: `npm run storybook` → http://localhost:6007
 | **1** | Done | Scaffold package, Rollup, Storybook |
 | **2** | Done | Board + engine source live in this repo |
 | **3** | Done | `react-chess-puzzle-kit` depends on `file:../react-chess-core`, re-export for compatibility |
-| **4** | Done | Remove duplicate shim files from puzzle-kit; slim public API |
+| **4** | Done | Remove duplicate shim files from puzzle-kit; slim public API (no core re-exports from puzzle-kit) |
 | **5** | Planned | New `react-chess-explorer` depending only on core |
 
 ---
