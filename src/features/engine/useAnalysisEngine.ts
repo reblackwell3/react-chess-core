@@ -82,7 +82,14 @@ export const useAnalysisEngine = (
       return;
     }
 
-    engineRef.current.analyze(fen, depth, multiPv);
+    const engine = engineRef.current;
+    const timer = window.setTimeout(() => {
+      engine.analyze(fen, depth, multiPv);
+    }, 75);
+
+    return () => {
+      window.clearTimeout(timer);
+    };
   }, [enabled, engineReady, fen, depth, multiPv]);
 
   return useMemo(() => {

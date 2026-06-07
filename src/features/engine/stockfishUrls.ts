@@ -9,14 +9,9 @@ export const resolveStockfishWasmUrl = (scriptUrl: string, baseHref?: string): s
 
 /**
  * Worker URL for stockfish.js (see examples/loadEngine.js in the stockfish package).
- * Hash is the WASM path on the same origin, e.g. `/stockfish/foo.js#/stockfish/foo.wasm`.
+ * Stockfish derives the sibling `.wasm` URL from the worker script pathname.
  */
 export const resolveStockfishWorkerUrl = (
   scriptUrl: string,
   baseHref?: string,
-): string => {
-  const base = baseHref ?? (typeof window !== 'undefined' ? window.location.href : '');
-  const scriptPath = new URL(scriptUrl, base).pathname;
-  const wasmPath = scriptPath.replace(/\.js(\?.*)?$/i, '.wasm$1');
-  return `${scriptPath}#${wasmPath}`;
-};
+): string => resolveStockfishScriptUrl(scriptUrl, baseHref);

@@ -28,6 +28,14 @@ export class StockfishBrowserEngine {
   private listeners = new Set<(evaluation: EngineEvaluation) => void>();
   private analysisFen = '';
   private analysisGeneration = 0;
+  private pendingSearch: {
+    fen: string;
+    depth: number;
+    multiPv: number;
+    generation: number;
+  } | null = null;
+  private dispatchedSearchGeneration = 0;
+  private searching = false;
 
   constructor(private readonly scriptUrl: string) {}
 
@@ -65,6 +73,13 @@ export class StockfishBrowserEngine {
         `Stockfish WASM missing at ${wasmUrl} (HTTP ${response.status}). Run: npm run copy:stockfish`,
       );
     }
+
+    const contentType = response.headers.get('content-type')?.toLowerCase() ?? '';
+    if (contentType.includes('text/html')) {
+      throw new Error(
+        `Stockfish WASM at ${wasmUrl} returned HTML (dev-server fallback). Run: npm run copy:stockfish and restart the dev server.`,
+      );
+    }
   }
 
   async init(): Promise<void> {
@@ -94,9 +109,12 @@ export class StockfishBrowserEngine {
     }
 
     this.worker = worker;
-    this.worker.onerror = () => {
+    this.worker.onerror = (event) => {
+      const detail =
+        event.message?.trim() ||
+        'Worker crashed while loading or analyzing (see browser console).';
       this.handleWorkerFailure(
-        `Stockfish worker failed (${this.scriptUrl}). Ensure public/stockfish/*.wasm is served.`,
+        `Stockfish worker failed (${this.scriptUrl}): ${detail} If WASM is missing, run copy:stockfish.`,
       );
     };
     this.worker.onmessageerror = () => {
@@ -245,20 +263,28 @@ export class StockfishBrowserEngine {
       return;
     }
 
+    const generation = ++this.analysisGeneration;
+
     if (!isAnalyzableFen(fen)) {
+      this.pendingSearch = null;
+      this.searching = false;
+      this.dispatchedSearchGeneration = generation;
       this.analysisFen = fen;
       this.lineMap.clear();
-      this.setEvaluation({
-        status: 'idle',
-        depth: 0,
-        lines: [],
-        fen,
-      });
+      this.setEvaluation(
+        {
+          status: 'idle',
+          depth: 0,
+          lines: [],
+          fen,
+        },
+        generation,
+      );
       this.worker.postMessage('stop');
       return;
     }
 
-    const generation = ++this.analysisGeneration;
+    this.pendingSearch = { fen, depth, multiPv, generation };
     this.analysisFen = fen;
     this.lineMap.clear();
     this.setEvaluation(
@@ -270,16 +296,42 @@ export class StockfishBrowserEngine {
       generation,
     );
 
+    if (!this.searching) {
+      this.dispatchPendingSearch();
+      return;
+    }
+
     this.worker.postMessage('stop');
-    this.worker.postMessage(`setoption name MultiPV value ${multiPv}`);
-    this.worker.postMessage(`position fen ${fen}`);
-    this.worker.postMessage(`go depth ${depth}`);
+  }
+
+  private dispatchPendingSearch(): void {
+    const pending = this.pendingSearch;
+    if (
+      !pending ||
+      !this.worker ||
+      !this.ready ||
+      this.disposed ||
+      pending.generation !== this.analysisGeneration ||
+      pending.generation === this.dispatchedSearchGeneration ||
+      !isAnalyzableFen(pending.fen)
+    ) {
+      return;
+    }
+
+    this.dispatchedSearchGeneration = pending.generation;
+    this.searching = true;
+    this.worker.postMessage(`setoption name MultiPV value ${pending.multiPv}`);
+    this.worker.postMessage(`position fen ${pending.fen}`);
+    this.worker.postMessage(`go depth ${pending.depth}`);
   }
 
   stop(): void {
     if (!this.worker || !this.ready) {
       return;
     }
+    this.pendingSearch = null;
+    this.searching = false;
+    this.dispatchedSearchGeneration = this.analysisGeneration;
     this.worker.postMessage('stop');
     this.setEvaluation({
       ...this.evaluation,
@@ -291,6 +343,9 @@ export class StockfishBrowserEngine {
     this.disposed = true;
     this.lifecycleGeneration += 1;
     this.ready = false;
+    this.pendingSearch = null;
+    this.searching = false;
+    this.dispatchedSearchGeneration = 0;
     this.stop();
     if (this.worker) {
       this.worker.onmessage = null;
@@ -332,6 +387,19 @@ export class StockfishBrowserEngine {
     }
 
     if (line.startsWith('bestmove')) {
+      this.searching = false;
+
+      if (
+        this.pendingSearch &&
+        this.pendingSearch.generation === this.analysisGeneration &&
+        this.pendingSearch.generation !== this.dispatchedSearchGeneration
+      ) {
+        this.dispatchPendingSearch();
+        if (this.searching) {
+          return;
+        }
+      }
+
       this.setEvaluation(
         {
           ...this.evaluation,
