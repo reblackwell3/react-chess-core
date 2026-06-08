@@ -46,7 +46,7 @@ export const DefaultAnalysisSidebar = ({
       </div>
 
       <div style={contentRowStyle}>
-        <ol style={moveListStyle}>
+        <ol style={moveListStyle} aria-label="Move history">
           {historyRows.length === 0 ? (
             <li style={emptyRowStyle}>No moves played yet.</li>
           ) : (
