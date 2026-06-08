@@ -1,4 +1,5 @@
 import React from 'react';
+import { PlyNavigation } from '../../navigation';
 import { AnalysisSidebarRenderProps } from '../core/renderProps';
 import { analysisSidebarColors } from './analysisSidebarColors';
 import {
@@ -27,35 +28,19 @@ export const DefaultAnalysisSidebar = ({
   return (
     <div style={sidebarStyle}>
       <div style={navBlockStyle}>
-        <div style={navStyle}>
-        <button type="button" onClick={() => onSelectPly(0)} disabled={ply === 0}>
-          |◀
-        </button>
-        <button
-          type="button"
-          onClick={() => onSelectPly(ply - 1)}
-          disabled={ply === 0}
-        >
-          ◀
-        </button>
-        <span style={plyLabelStyle}>
-          {ply} / {maxPly}
-        </span>
-        <button
-          type="button"
-          onClick={() => onSelectPly(ply + 1)}
-          disabled={ply >= maxPly}
-        >
-          ▶
-        </button>
-        <button
-          type="button"
-          onClick={() => onSelectPly(maxPly)}
-          disabled={ply >= maxPly}
-        >
-          ▶|
-        </button>
-      </div>
+        <PlyNavigation
+          plyIndex={ply}
+          totalPly={maxPly}
+          canPrev={ply > 0}
+          canNext={ply < maxPly}
+          onGoFirst={() => onSelectPly(0)}
+          onGoPrev={() => onSelectPly(ply - 1)}
+          onGoNext={() => onSelectPly(ply + 1)}
+          onGoLast={() => onSelectPly(maxPly)}
+          onGoTo={onSelectPly}
+          theme={theme}
+          showScrubber={false}
+        />
 
         <p style={sectionTitleStyle}>Move history</p>
       </div>
@@ -174,18 +159,6 @@ const footerStyle: React.CSSProperties = {
   padding: '0 12px 12px',
   fontSize: 12,
   color: '#888',
-};
-
-const navStyle: React.CSSProperties = {
-  display: 'flex',
-  alignItems: 'center',
-  gap: 8,
-  justifyContent: 'center',
-};
-
-const plyLabelStyle: React.CSSProperties = {
-  minWidth: 56,
-  textAlign: 'center',
 };
 
 const moveListStyle: React.CSSProperties = {
