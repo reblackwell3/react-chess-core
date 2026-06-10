@@ -1,5 +1,6 @@
 import { defaultRenderPlyNavigation } from './DefaultPlyNavigation';
 import type { PlyNavigationProps } from './types';
+import { usePositionKeyboardNav } from './usePositionKeyboardNav';
 
 /**
  * Step through a fixed move list. Omit {@link PlyNavigationProps.renderPlyNavigation}
@@ -16,11 +17,22 @@ export const PlyNavigation = ({
   onGoLast,
   onGoTo,
   theme = 'dark',
+  keyboardNav = true,
   showScrubber = true,
   showPlyLabel,
   renderPlyNavigation = defaultRenderPlyNavigation,
-}: PlyNavigationProps) =>
-  renderPlyNavigation({
+}: PlyNavigationProps) => {
+  usePositionKeyboardNav({
+    enabled: keyboardNav,
+    canPrev,
+    canNext,
+    onPrev: onGoPrev,
+    onNext: onGoNext,
+    onFirst: onGoFirst,
+    onLast: onGoLast,
+  });
+
+  return renderPlyNavigation({
     plyIndex,
     totalPly,
     canPrev,
@@ -34,3 +46,4 @@ export const PlyNavigation = ({
     showScrubber,
     showPlyLabel: showPlyLabel ?? !showScrubber,
   });
+};

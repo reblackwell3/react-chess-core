@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useCallback } from 'react';
+import { usePositionKeyboardNav } from '../../navigation';
 import { AnalysisChessboardView } from './AnalysisChessboardView';
 import {
   AnalysisContainerRenderProps,
@@ -15,6 +16,11 @@ import {
 
 export type AnalysisBoardCoreProps = UseAnalysisBoardModelArgs & {
   engine?: AnalysisEngineOptions;
+  /**
+   * Register ArrowLeft/ArrowRight/Home/End shortcuts while analysis is open.
+   * Default true.
+   */
+  keyboardNav?: boolean;
   /** Host-owned shell (modal, page layout, etc.). */
   renderContainer: (props: AnalysisContainerRenderProps) => React.ReactNode;
   /** Host-owned grid/placement of board + sidebar (no library default). */
@@ -34,12 +40,14 @@ export const AnalysisBoardCore = ({
   renderMain,
   renderSidebar,
   renderEngineEvaluation,
+  keyboardNav = true,
   ...modelArgs
 }: AnalysisBoardCoreProps) => {
   const model = useAnalysisBoardModel(modelArgs);
   return (
     <AnalysisBoardCoreView
       model={model}
+      keyboardNav={keyboardNav}
       renderContainer={renderContainer}
       renderMain={renderMain}
       renderSidebar={renderSidebar}
@@ -50,6 +58,7 @@ export const AnalysisBoardCore = ({
 
 type AnalysisBoardCoreViewProps = {
   model: AnalysisBoardModel;
+  keyboardNav: boolean;
   renderContainer: AnalysisBoardCoreProps['renderContainer'];
   renderMain: AnalysisBoardCoreProps['renderMain'];
   renderSidebar: AnalysisBoardCoreProps['renderSidebar'];
@@ -59,11 +68,30 @@ type AnalysisBoardCoreViewProps = {
 /** Pure composition (no layout styles) for testing and reuse. */
 export const AnalysisBoardCoreView = ({
   model,
+  keyboardNav,
   renderContainer,
   renderMain,
   renderSidebar,
   renderEngineEvaluation,
 }: AnalysisBoardCoreViewProps) => {
+  const { ply, maxPly, onSelectPly } = model;
+  const canPrev = ply > 0;
+  const canNext = ply < maxPly;
+  const goFirst = useCallback(() => onSelectPly(0), [onSelectPly]);
+  const goPrev = useCallback(() => onSelectPly(ply - 1), [onSelectPly, ply]);
+  const goNext = useCallback(() => onSelectPly(ply + 1), [onSelectPly, ply]);
+  const goLast = useCallback(() => onSelectPly(maxPly), [maxPly, onSelectPly]);
+
+  usePositionKeyboardNav({
+    enabled: keyboardNav,
+    canPrev,
+    canNext,
+    onPrev: goPrev,
+    onNext: goNext,
+    onFirst: goFirst,
+    onLast: goLast,
+  });
+
   const board = <AnalysisChessboardView model={model} />;
   const engineEvaluationPanel = model.engineEnabled
     ? renderEngineEvaluation({

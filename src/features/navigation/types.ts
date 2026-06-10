@@ -28,6 +28,11 @@ export type PlyNavigationRenderProps = PlyNavigationModel & {
 
 export type PlyNavigationProps = PlyNavigationModel & {
   theme?: PlyNavigationTheme;
+  /**
+   * Register ArrowLeft/ArrowRight/Home/End shortcuts while this nav is mounted.
+   * Default true.
+   */
+  keyboardNav?: boolean;
   /** Range scrubber between prev/next. Default true. */
   showScrubber?: boolean;
   /**

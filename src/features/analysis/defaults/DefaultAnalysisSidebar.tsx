@@ -39,6 +39,7 @@ export const DefaultAnalysisSidebar = ({
           onGoLast={() => onSelectPly(maxPly)}
           onGoTo={onSelectPly}
           theme={theme}
+          keyboardNav={false}
           showScrubber={false}
         />
 
