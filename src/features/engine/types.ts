@@ -31,6 +31,16 @@ export type AnalysisEngineOptions = {
   multiPv?: number;
   /** URL to stockfish-18-lite-single.js (host must serve .wasm alongside it). */
   scriptUrl?: string;
+  /**
+   * Higher priority wins when multiple hooks share an {@link AnalysisEngineProvider}.
+   * Default 0.
+   */
+  priority?: number;
+  /**
+   * When false, uses a dedicated worker even inside AnalysisEngineProvider
+   * (e.g. refutation comparing two positions at once).
+   */
+  shared?: boolean;
 };
 
 export const DEFAULT_STOCKFISH_SCRIPT_URL =

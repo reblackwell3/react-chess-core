@@ -4,4 +4,5 @@ export * from './formatEvaluation';
 export * from './parseUciInfo';
 export * from './StockfishBrowserEngine';
 export * from './isAnalyzableFen';
+export * from './AnalysisEngineContext';
 export * from './useAnalysisEngine';

@@ -1,4 +1,15 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import {
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
+import {
+  AnalysisEngineProvider,
+  normalizeSubscriberOptions,
+  useAnalysisEngineContext,
+} from './AnalysisEngineContext';
 import { StockfishBrowserEngine } from './StockfishBrowserEngine';
 import {
   AnalysisEngineOptions,
@@ -11,10 +22,14 @@ export const useAnalysisEngine = (
   fen: string,
   options: AnalysisEngineOptions = {},
 ): EngineEvaluation => {
+  const context = useAnalysisEngineContext();
+  const useShared = (options.shared ?? true) && context !== null;
+
   const {
     enabled = true,
     depth = 16,
     multiPv = 2,
+    priority = 0,
     scriptUrl = DEFAULT_STOCKFISH_SCRIPT_URL,
   } = options;
 
@@ -24,11 +39,49 @@ export const useAnalysisEngine = (
   const [engineReady, setEngineReady] = useState(false);
   const engineRef = useRef<StockfishBrowserEngine | null>(null);
   const mountGenerationRef = useRef(0);
+  const subscriberIdRef = useRef<number | null>(null);
+
+  const subscriberOptions = useMemo(
+    () => normalizeSubscriberOptions(fen, options),
+    [fen, enabled, depth, multiPv, priority],
+  );
+
+  useLayoutEffect(() => {
+    if (!useShared || !context) {
+      return;
+    }
+
+    if (subscriberIdRef.current === null) {
+      subscriberIdRef.current = context.register(
+        subscriberOptions,
+        setEvaluation,
+      );
+      return;
+    }
+
+    context.update(subscriberIdRef.current, subscriberOptions);
+  }, [context, subscriberOptions, useShared]);
 
   useEffect(() => {
-    if (!enabled || typeof Worker === 'undefined') {
-      setEvaluation(emptyEngineEvaluation());
-      setEngineReady(false);
+    if (!useShared || !context) {
+      return;
+    }
+
+    const contextValue = context;
+    return () => {
+      if (subscriberIdRef.current !== null) {
+        contextValue.unregister(subscriberIdRef.current);
+        subscriberIdRef.current = null;
+      }
+    };
+  }, [context, useShared]);
+
+  useEffect(() => {
+    if (useShared || !enabled || typeof Worker === 'undefined') {
+      if (!useShared && !enabled) {
+        setEvaluation(emptyEngineEvaluation());
+        setEngineReady(false);
+      }
       return;
     }
 
@@ -75,10 +128,10 @@ export const useAnalysisEngine = (
         engineRef.current = null;
       }
     };
-  }, [enabled, scriptUrl]);
+  }, [enabled, scriptUrl, useShared]);
 
   useLayoutEffect(() => {
-    if (!enabled || !engineReady || !engineRef.current) {
+    if (useShared || !enabled || !engineReady || !engineRef.current) {
       return;
     }
 
@@ -90,7 +143,7 @@ export const useAnalysisEngine = (
     return () => {
       window.clearTimeout(timer);
     };
-  }, [enabled, engineReady, fen, depth, multiPv]);
+  }, [useShared, enabled, engineReady, fen, depth, multiPv]);
 
   return useMemo(() => {
     if (evaluation.fen !== fen) {
@@ -109,3 +162,5 @@ export const useAnalysisEngine = (
     return evaluation;
   }, [evaluation, fen]);
 };
+
+export { AnalysisEngineProvider };
