@@ -1,5 +1,5 @@
 import { Meta, StoryObj } from '@storybook/react';
-import { ChessboardDnDProvider } from 'react-chessboard';
+import { ChessboardDnDProvider } from '../features/chessboard/ChessboardDnDProvider';
 import { HighlightChessboard } from '../features/chessboard/HighlightChessboard';
 const meta: Meta<typeof HighlightChessboard> = {
   title: 'Chessboard/HighlightChessboard',

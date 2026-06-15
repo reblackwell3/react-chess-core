@@ -1,4 +1,4 @@
-import { ChessboardDnDProvider } from 'react-chessboard';
+import { ChessboardDnDProvider } from '../../chessboard/ChessboardDnDProvider';
 import { HighlightChessboard } from '../../chessboard/HighlightChessboard';
 import { getLastMoveSquareStyles } from '../analysisBoardHighlightColors';
 import { AnalysisBoardModel } from './useAnalysisBoardModel';
