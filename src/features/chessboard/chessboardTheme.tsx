@@ -1,4 +1,9 @@
 import { createContext, useContext, ReactNode } from 'react';
+import {
+  type BoardThemeId,
+  boardThemeFromLegacyUiTheme,
+  getBoardThemeStyles,
+} from './boardThemes';
 
 interface ChessboardThemeContextType {
   customDarkSquareStyle: { backgroundColor: string };
@@ -20,28 +25,26 @@ export const useChessboardTheme = () => {
 /** @deprecated Use {@link useChessboardTheme}. */
 export const useTheme = useChessboardTheme;
 
-export const getStylesForTheme = (theme: 'light' | 'dark') => {
-  if (theme === 'dark') {
-    return {
-      customDarkSquareStyle: { backgroundColor: '#838387' },
-      customLightSquareStyle: { backgroundColor: '#e1e1e3' },
-    };
-  }
-
-  return {
-    customDarkSquareStyle: { backgroundColor: '#b58863' },
-    customLightSquareStyle: { backgroundColor: '#f0d9b5' },
-  };
-};
+/** @deprecated Use {@link getBoardThemeStyles}. */
+export const getStylesForTheme = (theme: 'light' | 'dark') =>
+  getBoardThemeStyles(boardThemeFromLegacyUiTheme(theme));
 
 export type ThemeProviderProps = {
   children?: ReactNode;
-  theme: 'light' | 'dark';
+  /** UI chrome palette; used when `boardTheme` is omitted. */
+  theme?: 'light' | 'dark';
+  boardTheme?: BoardThemeId;
 };
 
-export const ThemeProvider = ({ children, theme }: ThemeProviderProps) => {
+export const ThemeProvider = ({
+  children,
+  theme = 'dark',
+  boardTheme,
+}: ThemeProviderProps) => {
+  const resolvedBoardTheme =
+    boardTheme ?? boardThemeFromLegacyUiTheme(theme);
   const { customDarkSquareStyle, customLightSquareStyle } =
-    getStylesForTheme(theme);
+    getBoardThemeStyles(resolvedBoardTheme);
 
   return (
     <ChessboardThemeContext.Provider
