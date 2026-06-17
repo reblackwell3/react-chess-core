@@ -25,6 +25,10 @@
     "prepublishOnly": "npm run build"
   },
   "dependencies": {
+    "rdndmb-html5-to-touch": "^9.0.0",
+    "react-dnd-html5-backend": "^16.0.1",
+    "react-dnd-multi-backend": "^9.0.0",
+    "react-dnd-touch-backend": "^16.0.1",
     "rollup": "^4.22.2",
     "rollup-plugin-peer-deps-external": "^2.2.4",
     "typescript": "^5.6.2"
