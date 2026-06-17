@@ -7,6 +7,8 @@ npm run build
 
 Shared **chessboard** (theme + `HighlightChessboard`) and **browser Stockfish** utilities. Used by `react-chess-puzzle-kit` and (planned) `react-chess-explorer`.
 
+Used in production at [endchess.com](https://endchess.com).
+
 Storybook: `npm run storybook` → http://localhost:6007
 
 ---
