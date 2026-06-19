@@ -34,6 +34,7 @@ export type AnalysisBoardModel = {
   engineEvaluation: EngineEvaluation;
   engineEnabled: boolean;
   lastMove: { from: string; to: string } | null;
+  lastMoveUci: string | null;
   checkSquare: string | null;
   onSelectPly: (ply: number) => void;
   onSelectHistoryRow: (row: AnalysisHistoryRow) => void;
@@ -98,6 +99,7 @@ export const useAnalysisBoardModel = ({
     engineEvaluation,
     engineEnabled,
     lastMove: analysisPosition.getLastMoveSquares(),
+    lastMoveUci: analysisPosition.getLastMoveUci(),
     checkSquare: analysisPosition.getCheckSquare(),
     onSelectPly: (ply: number) => {
       analysisPosition.goToNavPly(ply);

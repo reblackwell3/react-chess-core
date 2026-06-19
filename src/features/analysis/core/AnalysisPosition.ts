@@ -341,22 +341,28 @@ export class AnalysisPosition {
   }
 
   getLastMoveSquares(): { from: string; to: string } | null {
-    const navPly = this.getNavPly();
-    if (navPly === 0) {
+    const uci = this.getLastMoveUci();
+    if (!uci) {
       return null;
-    }
-
-    let uci: string;
-    if (this.variation && this.variationCursor > 0) {
-      uci = this.variation.moves[this.variationCursor - 1];
-    } else {
-      uci = this.solutionMoves[this.mainPly - 1];
     }
 
     return {
       from: uci.slice(0, 2),
       to: uci.slice(2, 4),
     };
+  }
+
+  getLastMoveUci(): string | null {
+    const navPly = this.getNavPly();
+    if (navPly === 0) {
+      return null;
+    }
+
+    if (this.variation && this.variationCursor > 0) {
+      return this.variation.moves[this.variationCursor - 1];
+    }
+
+    return this.solutionMoves[this.mainPly - 1] ?? null;
   }
 
   fen(): string {

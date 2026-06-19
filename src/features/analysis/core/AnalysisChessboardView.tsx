@@ -1,6 +1,5 @@
 import { ChessboardDnDProvider } from '../../chessboard/ChessboardDnDProvider';
 import { HighlightChessboard } from '../../chessboard/HighlightChessboard';
-import { getLastMoveSquareStyles } from '../analysisBoardHighlightColors';
 import { AnalysisBoardModel } from './useAnalysisBoardModel';
 
 /** Draggable analysis board (no surrounding layout chrome). */
@@ -16,15 +15,7 @@ export const AnalysisChessboardView = ({ model }: { model: AnalysisBoardModel })
       arePiecesDraggable={true}
       onPieceDrop={model.onPieceDrop}
       promotionDialogVariant="modal"
-      customSquareStyles={
-        model.lastMove
-          ? getLastMoveSquareStyles(
-              model.lastMove.from,
-              model.lastMove.to,
-              model.theme,
-            )
-          : {}
-      }
+      lastMoveUci={model.lastMoveUci}
     />
   </ChessboardDnDProvider>
 );

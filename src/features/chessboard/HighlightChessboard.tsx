@@ -2,6 +2,7 @@ import { useMemo, type CSSProperties } from 'react';
 import { boardSquareHighlightColors } from './boardSquareHighlightColors';
 import { useChessboardTheme } from './chessboardTheme';
 import { createFeedbackSquareRenderer } from './createFeedbackSquareRenderer';
+import { mergeCustomArrowsWithLastMove } from './lastMoveArrow';
 import { useClickToMove } from './useClickToMove';
 import { Chessboard } from 'react-chessboard';
 
@@ -40,6 +41,10 @@ export interface HighlightChessboardProps {
   incorrectMoveSquare: string | null;
   /** Destination square of the last correct training move — shows a green check. */
   correctMoveSquare?: string | null;
+  /** UCI of the move that led to the current position (shows a last-move arrow). */
+  lastMoveUci?: string | null;
+  /** Override the default last-move arrow color. */
+  lastMoveArrowColor?: string;
   /** Enable click-to-move when `onPieceDrop` is provided. Defaults to true. */
   clickToMove?: boolean;
   [key: string]: any;
@@ -50,8 +55,11 @@ export const HighlightChessboard = ({
   hintSquare,
   incorrectMoveSquare,
   correctMoveSquare = null,
+  lastMoveUci = null,
+  lastMoveArrowColor,
   clickToMove,
   customSquareStyles: extraSquareStyles,
+  customArrows,
   customBoardStyle,
   onPieceDrop,
   position,
@@ -109,6 +117,16 @@ export const HighlightChessboard = ({
     [correctMoveSquare],
   );
 
+  const mergedCustomArrows = useMemo(
+    () =>
+      mergeCustomArrowsWithLastMove(
+        customArrows,
+        lastMoveUci,
+        lastMoveArrowColor,
+      ),
+    [customArrows, lastMoveArrowColor, lastMoveUci],
+  );
+
   const promotionControlProps = clickPromotionDialog
     ? {
         showPromotionDialog: true,
@@ -142,6 +160,7 @@ export const HighlightChessboard = ({
       onPieceDragBegin={
         clickToMoveEnabled ? handlePieceDragBegin : onPieceDragBegin
       }
+      customArrows={mergedCustomArrows}
       {...promotionControlProps}
       {...props}
     />

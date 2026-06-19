@@ -11,6 +11,7 @@ export type MissSequenceState = {
 export type MissDisplay = {
   fen: string | null;
   arrows: [string, string, string][];
+  lastMoveUci: string | null;
   animating: boolean;
 };
 
@@ -46,6 +47,7 @@ export function getMissDisplay(
     return {
       fen: null,
       arrows: [],
+      lastMoveUci: null,
       animating: false,
     };
   }
@@ -58,6 +60,7 @@ export function getMissDisplay(
       return {
         fen: fenAfterWrong ?? setupFen,
         arrows: [],
+        lastMoveUci: attemptedUci,
         animating: false,
       };
     case 'refutation': {
@@ -68,6 +71,7 @@ export function getMissDisplay(
       return {
         fen: fenAfterRefutation ?? fenAfterWrong ?? setupFen,
         arrows: [],
+        lastMoveUci: refutationUci,
         animating: Boolean(fenAfterRefutation),
       };
     }
@@ -75,18 +79,21 @@ export function getMissDisplay(
       return {
         fen: setupFen,
         arrows: [],
+        lastMoveUci: null,
         animating: false,
       };
     case 'answer':
       return {
         fen: setupFen,
         arrows: expectedMoveArrow(expectedUci, answerArrowColor),
+        lastMoveUci: null,
         animating: false,
       };
     default:
       return {
         fen: setupFen,
         arrows: [],
+        lastMoveUci: null,
         animating: false,
       };
   }
