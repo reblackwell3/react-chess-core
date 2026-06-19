@@ -80,10 +80,11 @@ export const useAnalysisBoardModel = ({
   const fen = analysisPosition.fen();
   const engineEnabled = engine?.enabled ?? true;
   const engineEvaluation = useAnalysisEngine(fen, {
+    depth: 16,
+    multiPv: 2,
+    scriptUrl: DEFAULT_STOCKFISH_SCRIPT_URL,
+    ...engine,
     enabled: engineEnabled,
-    depth: engine?.depth ?? 16,
-    multiPv: engine?.multiPv ?? 2,
-    scriptUrl: engine?.scriptUrl ?? DEFAULT_STOCKFISH_SCRIPT_URL,
   });
 
   return {
