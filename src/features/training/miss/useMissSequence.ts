@@ -56,6 +56,18 @@ export function useMissSequence(
     }
   }, [feedback]);
 
+  const wrongPhaseEnteredAtRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (sequence?.phase === 'wrong') {
+      if (wrongPhaseEnteredAtRef.current === null) {
+        wrongPhaseEnteredAtRef.current = Date.now();
+      }
+      return;
+    }
+    wrongPhaseEnteredAtRef.current = null;
+  }, [sequence?.phase]);
+
   useEffect(() => {
     if (!sequence || sequence.phase !== 'wrong' || !autoShowWrongMoves) {
       return undefined;
@@ -70,7 +82,13 @@ export function useMissSequence(
       return () => window.clearTimeout(maxWait);
     }
 
-    const delay = window.setTimeout(() => {
+    const enteredAt = wrongPhaseEnteredAtRef.current ?? Date.now();
+    const remainingPause = Math.max(
+      0,
+      MISS_WRONG_PAUSE_MS - (Date.now() - enteredAt),
+    );
+
+    const advanceTimer = window.setTimeout(() => {
       setSequence((current) => {
         if (!current || current.phase !== 'wrong') {
           return current;
@@ -80,9 +98,9 @@ export function useMissSequence(
           phase: refutation.refutationUci ? 'refutation' : 'answer',
         };
       });
-    }, MISS_WRONG_PAUSE_MS);
+    }, remainingPause);
 
-    return () => window.clearTimeout(delay);
+    return () => window.clearTimeout(advanceTimer);
   }, [
     autoShowWrongMoves,
     refutation.loading,
