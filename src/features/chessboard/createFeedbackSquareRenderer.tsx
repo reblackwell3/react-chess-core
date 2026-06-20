@@ -2,6 +2,7 @@ import type { CSSProperties, FC } from 'react';
 import type { CustomSquareProps } from 'react-chessboard/dist/chessboard/types';
 import { CorrectMoveCheckBadge } from './CorrectMoveCheckBadge';
 import { IncorrectMoveXBadge } from './IncorrectMoveXBadge';
+import { RefutationMoveBadge } from './RefutationMoveBadge';
 
 const overlayStyle: CSSProperties = {
   position: 'absolute',
@@ -14,13 +15,15 @@ const overlayStyle: CSSProperties = {
 export type FeedbackSquareRendererOptions = {
   correctMoveSquare?: string | null;
   incorrectMoveSquare?: string | null;
+  refutationMoveSquare?: string | null;
 };
 
 export function createFeedbackSquareRenderer({
   correctMoveSquare = null,
   incorrectMoveSquare = null,
+  refutationMoveSquare = null,
 }: FeedbackSquareRendererOptions): FC<CustomSquareProps> | undefined {
-  if (!correctMoveSquare && !incorrectMoveSquare) {
+  if (!correctMoveSquare && !incorrectMoveSquare && !refutationMoveSquare) {
     return undefined;
   }
 
@@ -39,6 +42,11 @@ export function createFeedbackSquareRenderer({
         {square === incorrectMoveSquare ? (
           <div style={overlayStyle}>
             <IncorrectMoveXBadge />
+          </div>
+        ) : null}
+        {square === refutationMoveSquare ? (
+          <div style={overlayStyle}>
+            <RefutationMoveBadge />
           </div>
         ) : null}
       </div>

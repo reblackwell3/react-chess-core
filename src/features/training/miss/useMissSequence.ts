@@ -4,7 +4,6 @@ import {
   getMissDisplay,
   MISS_REFUTATION_MAX_WAIT_MS,
   MISS_REFUTATION_PAUSE_MS,
-  MISS_WRONG_PAUSE_MS,
   type MissDisplay,
   type MissSequencePhase,
   type MissSequenceState,
@@ -70,19 +69,17 @@ export function useMissSequence(
       return () => window.clearTimeout(maxWait);
     }
 
-    const delay = window.setTimeout(() => {
-      setSequence((current) => {
-        if (!current || current.phase !== 'wrong') {
-          return current;
-        }
-        return {
-          ...current,
-          phase: refutation.refutationUci ? 'refutation' : 'answer',
-        };
-      });
-    }, MISS_WRONG_PAUSE_MS);
+    setSequence((current) => {
+      if (!current || current.phase !== 'wrong') {
+        return current;
+      }
+      return {
+        ...current,
+        phase: refutation.refutationUci ? 'refutation' : 'answer',
+      };
+    });
 
-    return () => window.clearTimeout(delay);
+    return undefined;
   }, [
     autoShowWrongMoves,
     refutation.loading,

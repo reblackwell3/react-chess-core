@@ -32,6 +32,8 @@ export interface HighlightChessboardProps {
   hintSquare: string | null;
   /** Origin square of a rejected training move — shows a red X on the snapped-back piece. */
   incorrectMoveSquare?: string | null;
+  /** Destination square of the engine refutation — shows an orange exclamation. */
+  refutationMoveSquare?: string | null;
   /** Destination square of the last correct training move — shows a green check. */
   correctMoveSquare?: string | null;
   /** UCI of the move that led to the current position (shows a last-move arrow). */
@@ -45,6 +47,7 @@ export const HighlightChessboard = ({
   checkSquare,
   hintSquare,
   incorrectMoveSquare = null,
+  refutationMoveSquare = null,
   correctMoveSquare = null,
   lastMoveUci = null,
   clickToMove,
@@ -101,8 +104,9 @@ export const HighlightChessboard = ({
       createFeedbackSquareRenderer({
         correctMoveSquare,
         incorrectMoveSquare,
+        refutationMoveSquare,
       }),
-    [correctMoveSquare, incorrectMoveSquare],
+    [correctMoveSquare, incorrectMoveSquare, refutationMoveSquare],
   );
 
   const mergedCustomArrows = useMemo(

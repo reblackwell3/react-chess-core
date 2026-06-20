@@ -13,11 +13,13 @@ export type CreateTrainingDropHandlerOptions = Omit<
 > & {
   onCorrect?: (attempt: ExpectedMoveAttempt) => void;
   onIncorrect?: (attempt: ExpectedMoveAttempt) => void;
+  /** When true, miss-sequence overlays handle incorrect feedback instead of the red X. */
+  skipIncorrectOverlay?: boolean;
 };
 
 /**
  * Shared correct/incorrect move overlays for training boards.
- * Incorrect feedback always uses the drag origin square (snapped-back piece).
+ * Incorrect feedback uses the drag origin square when the piece snaps back.
  */
 export function useTrainingMoveFeedback(
   delayMs?: number,
@@ -44,6 +46,7 @@ export function useTrainingMoveFeedback(
     ({
       onCorrect,
       onIncorrect,
+      skipIncorrectOverlay = false,
       ...options
     }: CreateTrainingDropHandlerOptions) =>
       createExpectedMoveDropHandler({
@@ -52,7 +55,9 @@ export function useTrainingMoveFeedback(
           onCorrect?.(attempt);
         },
         onIncorrect: (attempt) => {
-          showIncorrectMove(attempt.sourceSquare);
+          if (!skipIncorrectOverlay) {
+            showIncorrectMove(attempt.sourceSquare);
+          }
           onIncorrect?.(attempt);
         },
       }),

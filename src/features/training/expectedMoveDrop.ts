@@ -18,6 +18,8 @@ export type CreateExpectedMoveDropHandlerOptions = {
   enabled: boolean;
   onCorrect: (attempt: ExpectedMoveAttempt) => void;
   onIncorrect: (attempt: ExpectedMoveAttempt) => void;
+  /** Keep the wrong move on the board for refutation feedback instead of snapping back. */
+  acceptIncorrectDrop?: boolean;
 };
 
 /**
@@ -60,6 +62,7 @@ export function createExpectedMoveDropHandler({
   enabled,
   onCorrect,
   onIncorrect,
+  acceptIncorrectDrop = false,
 }: CreateExpectedMoveDropHandlerOptions) {
   return (sourceSquare: string, targetSquare: string, piece: string): boolean => {
     const result = evaluateExpectedMoveDrop(
@@ -77,7 +80,7 @@ export function createExpectedMoveDropHandler({
         return true;
       case 'incorrect':
         onIncorrect(result.attempt);
-        return false;
+        return acceptIncorrectDrop;
       default:
         return false;
     }
