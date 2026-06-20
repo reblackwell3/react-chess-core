@@ -1,6 +1,6 @@
 {
   "name": "react-chess-core",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "description": "Shared React chessboard theme, highlights, browser Stockfish, and analysis board",
   "license": "MIT",
   "author": "Robert Blackwell",
