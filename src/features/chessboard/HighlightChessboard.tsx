@@ -19,18 +19,10 @@ const getCheckHighlighting = (checkSquare: string) => {
   return styles;
 };
 
-const getFeedbackHighlighting = (
-  hintSquare: string | null,
-  incorrectMoveSquare: string | null,
-) => {
+const getFeedbackHighlighting = (hintSquare: string | null) => {
   const styles: Record<string, { backgroundColor: string }> = {};
   if (hintSquare) {
     styles[hintSquare] = { backgroundColor: boardSquareHighlightColors.hint };
-  }
-  if (incorrectMoveSquare) {
-    styles[incorrectMoveSquare] = {
-      backgroundColor: boardSquareHighlightColors.incorrect,
-    };
   }
   return styles;
 };
@@ -38,13 +30,12 @@ const getFeedbackHighlighting = (
 export interface HighlightChessboardProps {
   checkSquare: string;
   hintSquare: string | null;
-  incorrectMoveSquare: string | null;
+  /** Origin square of a rejected training move — shows a red X on the snapped-back piece. */
+  incorrectMoveSquare?: string | null;
   /** Destination square of the last correct training move — shows a green check. */
   correctMoveSquare?: string | null;
   /** UCI of the move that led to the current position (shows a last-move arrow). */
   lastMoveUci?: string | null;
-  /** Override the default last-move arrow color. */
-  lastMoveArrowColor?: string;
   /** Enable click-to-move when `onPieceDrop` is provided. Defaults to true. */
   clickToMove?: boolean;
   [key: string]: any;
@@ -53,10 +44,9 @@ export interface HighlightChessboardProps {
 export const HighlightChessboard = ({
   checkSquare,
   hintSquare,
-  incorrectMoveSquare,
+  incorrectMoveSquare = null,
   correctMoveSquare = null,
   lastMoveUci = null,
-  lastMoveArrowColor,
   clickToMove,
   customSquareStyles: extraSquareStyles,
   customArrows,
@@ -99,10 +89,7 @@ export const HighlightChessboard = ({
   });
 
   const checkStyles = getCheckHighlighting(checkSquare);
-  const feedbackStyles = getFeedbackHighlighting(
-    hintSquare,
-    incorrectMoveSquare,
-  );
+  const feedbackStyles = getFeedbackHighlighting(hintSquare);
   const customSquareStyles = {
     ...clickSquareStyles,
     ...checkStyles,
@@ -111,20 +98,16 @@ export const HighlightChessboard = ({
   };
   const customSquare = useMemo(
     () =>
-      correctMoveSquare
-        ? createFeedbackSquareRenderer(correctMoveSquare)
-        : undefined,
-    [correctMoveSquare],
+      createFeedbackSquareRenderer({
+        correctMoveSquare,
+        incorrectMoveSquare,
+      }),
+    [correctMoveSquare, incorrectMoveSquare],
   );
 
   const mergedCustomArrows = useMemo(
-    () =>
-      mergeCustomArrowsWithLastMove(
-        customArrows,
-        lastMoveUci,
-        lastMoveArrowColor,
-      ),
-    [customArrows, lastMoveArrowColor, lastMoveUci],
+    () => mergeCustomArrowsWithLastMove(customArrows, lastMoveUci),
+    [customArrows, lastMoveUci],
   );
 
   const promotionControlProps = clickPromotionDialog

@@ -58,9 +58,9 @@ export function getMissDisplay(
   switch (phase) {
     case 'wrong':
       return {
-        fen: fenAfterWrong ?? setupFen,
+        fen: setupFen,
         arrows: [],
-        lastMoveUci: attemptedUci,
+        lastMoveUci: null,
         animating: false,
       };
     case 'refutation': {

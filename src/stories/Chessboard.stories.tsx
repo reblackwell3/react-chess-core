@@ -79,3 +79,11 @@ export const WithCorrectMoveCheck: Story = {
     correctMoveSquare: 'e4',
   },
 };
+
+export const WithIncorrectMoveX: Story = {
+  args: {
+    ...StartingPosition.args,
+    position: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
+    incorrectMoveSquare: 'e2',
+  },
+};

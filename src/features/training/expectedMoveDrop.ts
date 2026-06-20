@@ -1,17 +1,23 @@
 import { matchesExpectedUci, uciFromDrop } from './uciFromDrop';
 
+export type ExpectedMoveAttempt = {
+  uci: string;
+  sourceSquare: string;
+  targetSquare: string;
+};
+
 export type ExpectedMoveDropResult =
   | { kind: 'ignored' }
   | { kind: 'illegal' }
-  | { kind: 'correct'; uci: string }
-  | { kind: 'incorrect'; uci: string };
+  | { kind: 'correct'; attempt: ExpectedMoveAttempt }
+  | { kind: 'incorrect'; attempt: ExpectedMoveAttempt };
 
 export type CreateExpectedMoveDropHandlerOptions = {
   fen: string;
   expectedUci: string | null | undefined;
   enabled: boolean;
-  onCorrect: (uci: string) => void;
-  onIncorrect: (uci: string) => void;
+  onCorrect: (attempt: ExpectedMoveAttempt) => void;
+  onIncorrect: (attempt: ExpectedMoveAttempt) => void;
 };
 
 /**
@@ -35,11 +41,17 @@ export function evaluateExpectedMoveDrop(
     return { kind: 'illegal' };
   }
 
+  const attempt: ExpectedMoveAttempt = {
+    uci,
+    sourceSquare,
+    targetSquare,
+  };
+
   if (matchesExpectedUci(uci, expectedUci)) {
-    return { kind: 'correct', uci };
+    return { kind: 'correct', attempt };
   }
 
-  return { kind: 'incorrect', uci };
+  return { kind: 'incorrect', attempt };
 }
 
 export function createExpectedMoveDropHandler({
@@ -61,10 +73,10 @@ export function createExpectedMoveDropHandler({
 
     switch (result.kind) {
       case 'correct':
-        onCorrect(result.uci);
+        onCorrect(result.attempt);
         return true;
       case 'incorrect':
-        onIncorrect(result.uci);
+        onIncorrect(result.attempt);
         return false;
       default:
         return false;
