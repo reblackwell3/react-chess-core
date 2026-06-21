@@ -109,6 +109,7 @@ export function useMissBoard({
     customArrows,
     boardPosition,
     boardAnimating: missSequence.display.animating,
+    lastMoveUci: missSequence.display.lastMoveUci,
     wrapDropHandler,
   };
 }
