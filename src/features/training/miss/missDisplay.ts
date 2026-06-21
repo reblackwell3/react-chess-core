@@ -1,3 +1,4 @@
+import type { ChessboardArrow } from '../../chessboard/lastMoveArrow';
 import { fenAfterUci } from './refutation';
 
 export type MissSequencePhase = 'wrong' | 'refutation' | 'answer' | 'retry';
@@ -10,7 +11,7 @@ export type MissSequenceState = {
 
 export type MissDisplay = {
   fen: string | null;
-  arrows: [string, string, string][];
+  arrows: ChessboardArrow[];
   lastMoveUci: string | null;
   animating: boolean;
   /** Destination square of the wrong move while refutation feedback is active. */
@@ -28,17 +29,17 @@ export const MISS_MOVE_ANIMATION_MS = 220;
 function moveArrow(
   uci: string | null | undefined,
   color: string,
-): [string, string, string][] {
+): ChessboardArrow[] {
   if (!uci || uci.length < 4) {
     return [];
   }
-  return [[uci.slice(0, 2), uci.slice(2, 4), color]];
+  return [[uci.slice(0, 2), uci.slice(2, 4), color] as ChessboardArrow];
 }
 
 function expectedMoveArrow(
   expectedUci: string | null,
   color: string,
-): [string, string, string][] {
+): ChessboardArrow[] {
   return moveArrow(expectedUci, color);
 }
 

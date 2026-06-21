@@ -1,13 +1,13 @@
+import type { ComponentProps } from 'react';
+import { Chessboard } from 'react-chessboard';
 import { boardArrowColors } from './boardArrowColors';
 
-export type ChessboardArrow = [string, string, string];
+export type ChessboardArrow = NonNullable<
+  ComponentProps<typeof Chessboard>['customArrows']
+>[number];
 
-export const uciToArrow = (uci: string): ChessboardArrow => [
-  uci.slice(0, 2),
-  uci.slice(2, 4),
-  boardArrowColors.lastMove,
-];
-
+export const uciToArrow = (uci: string): ChessboardArrow =>
+  [uci.slice(0, 2), uci.slice(2, 4), boardArrowColors.lastMove] as ChessboardArrow;
 export const lastMoveArrowFromUci = (
   uci: string | null | undefined,
 ): ChessboardArrow[] => {

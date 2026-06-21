@@ -1,4 +1,5 @@
 import { useCallback, useMemo } from 'react';
+import type { ChessboardArrow } from '../../chessboard/lastMoveArrow';
 import type { AnalysisEngineOptions } from '../../engine/types';
 import { uciFromDrop } from '../uciFromDrop';
 import { refutationEngineOptions } from './refutation';
@@ -37,7 +38,7 @@ export function useMissBoard({
     autoShowWrongMoves,
   );
 
-  const customArrows = useMemo<[string, string, string][]>(() => {
+  const customArrows = useMemo<ChessboardArrow[]>(() => {
     if (feedback !== 'incorrect') {
       return [];
     }
@@ -52,7 +53,7 @@ export function useMissBoard({
           expectedUci.slice(0, 2),
           expectedUci.slice(2, 4),
           answerArrowColor,
-        ],
+        ] as ChessboardArrow,
       ];
     }
 
