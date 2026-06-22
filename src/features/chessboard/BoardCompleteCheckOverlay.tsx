@@ -11,21 +11,28 @@ const overlayStyle: CSSProperties = {
   borderRadius: 4,
 };
 
-const badgeStyle: CSSProperties = {
+const badgeStyle = (variant: 'success' | 'partial'): CSSProperties => ({
   width: '58%',
   height: '58%',
   borderRadius: '50%',
-  backgroundColor: '#2e7d32',
+  backgroundColor: variant === 'success' ? '#2e7d32' : '#616161',
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
   boxShadow: '0 4px 20px rgba(0, 0, 0, 0.4)',
-};
+});
 
-/** Large green check centered over the full chessboard when a line completes. */
-export const BoardCompleteCheckOverlay = () => (
+export type BoardCompleteCheckVariant = 'success' | 'partial';
+
+/** Large check centered over the full chessboard when a line completes. */
+export const BoardCompleteCheckOverlay = ({
+  variant = 'success',
+}: {
+  /** Green for a clean solve; grey when the line finished after a miss, hint, or reveal. */
+  variant?: BoardCompleteCheckVariant;
+}) => (
   <div aria-hidden style={overlayStyle}>
-    <span style={badgeStyle}>
+    <span style={badgeStyle(variant)}>
       <svg
         viewBox="0 0 24 24"
         width="58%"
