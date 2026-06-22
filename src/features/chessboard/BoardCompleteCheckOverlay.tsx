@@ -11,9 +11,11 @@ const overlayStyle: CSSProperties = {
   borderRadius: 4,
 };
 
+const CHECK_OVERLAY_SIZE = '42%';
+
 const badgeStyle = (variant: 'success' | 'partial'): CSSProperties => ({
-  width: '58%',
-  height: '58%',
+  width: CHECK_OVERLAY_SIZE,
+  height: CHECK_OVERLAY_SIZE,
   borderRadius: '50%',
   backgroundColor: variant === 'success' ? '#2e7d32' : '#616161',
   display: 'flex',
@@ -24,7 +26,7 @@ const badgeStyle = (variant: 'success' | 'partial'): CSSProperties => ({
 
 export type BoardCompleteCheckVariant = 'success' | 'partial';
 
-/** Large check centered over the full chessboard when a line completes. */
+/** Medium check centered over the full chessboard when a line completes. */
 export const BoardCompleteCheckOverlay = ({
   variant = 'success',
 }: {
