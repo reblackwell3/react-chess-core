@@ -40,6 +40,39 @@ export const lastMoveUciForLinePly = (
   return lineSetupUci ?? null;
 };
 
+/** First ply index where the trainer/quiz position is shown after an optional setup move. */
+export const trainerLinePlyIndex = (movesUci: readonly string[]): number =>
+  movesUci.length > 1 ? 1 : 0;
+
+export type ChessboardLineContext = {
+  movesUci: readonly string[];
+  plyIndex: number;
+  setupUci?: string | null;
+};
+
+export type ResolveLastMoveUciInput = {
+  lastMoveUci?: string | null;
+  lineContext?: ChessboardLineContext;
+};
+
+/** Resolve the last-move UCI for a board position from explicit or line context. */
+export const resolveLastMoveUci = ({
+  lastMoveUci,
+  lineContext,
+}: ResolveLastMoveUciInput): string | null => {
+  if (lastMoveUci !== undefined) {
+    return lastMoveUci;
+  }
+  if (lineContext) {
+    return lastMoveUciForLinePly(
+      lineContext.movesUci,
+      lineContext.plyIndex,
+      lineContext.setupUci,
+    );
+  }
+  return null;
+};
+
 export const mergeCustomArrowsWithLastMove = (
   customArrows: ChessboardArrow[] | undefined,
   lastMoveUci: string | null | undefined,

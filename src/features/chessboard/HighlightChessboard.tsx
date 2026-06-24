@@ -2,7 +2,11 @@ import { useMemo, type CSSProperties } from 'react';
 import { boardSquareHighlightColors } from './boardSquareHighlightColors';
 import { useChessboardTheme } from './chessboardTheme';
 import { createFeedbackSquareRenderer } from './createFeedbackSquareRenderer';
-import { mergeCustomArrowsWithLastMove } from './lastMoveArrow';
+import {
+  mergeCustomArrowsWithLastMove,
+  resolveLastMoveUci,
+  type ChessboardLineContext,
+} from './lastMoveArrow';
 import { useClickToMove } from './useClickToMove';
 import { Chessboard } from 'react-chessboard';
 
@@ -38,6 +42,8 @@ export interface HighlightChessboardProps {
   correctMoveSquare?: string | null;
   /** UCI of the move that led to the current position (shows a last-move arrow). */
   lastMoveUci?: string | null;
+  /** When `lastMoveUci` is omitted, derives the arrow from the line at `plyIndex`. */
+  lineContext?: ChessboardLineContext;
   /** Enable click-to-move when `onPieceDrop` is provided. Defaults to true. */
   clickToMove?: boolean;
   [key: string]: any;
@@ -49,7 +55,8 @@ export const HighlightChessboard = ({
   incorrectMoveSquare = null,
   refutationMoveSquare = null,
   correctMoveSquare = null,
-  lastMoveUci = null,
+  lastMoveUci,
+  lineContext,
   clickToMove,
   customSquareStyles: extraSquareStyles,
   customArrows,
@@ -109,9 +116,14 @@ export const HighlightChessboard = ({
     [correctMoveSquare, incorrectMoveSquare, refutationMoveSquare],
   );
 
+  const resolvedLastMoveUci = useMemo(
+    () => resolveLastMoveUci({ lastMoveUci, lineContext }),
+    [lastMoveUci, lineContext],
+  );
+
   const mergedCustomArrows = useMemo(
-    () => mergeCustomArrowsWithLastMove(customArrows, lastMoveUci),
-    [customArrows, lastMoveUci],
+    () => mergeCustomArrowsWithLastMove(customArrows, resolvedLastMoveUci),
+    [customArrows, resolvedLastMoveUci],
   );
 
   const promotionControlProps = clickPromotionDialog
