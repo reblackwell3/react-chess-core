@@ -20,7 +20,7 @@ export type RefutationResult = {
 };
 
 export const refutationEngineOptions: AnalysisEngineOptions = {
-  depth: 14,
+  depth: 10,
   multiPv: 1,
 };
 
