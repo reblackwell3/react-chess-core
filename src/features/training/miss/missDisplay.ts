@@ -125,3 +125,38 @@ export function getMissDisplay(
       };
   }
 }
+
+/** Chessboard animation duration while a refutation move is playing. */
+export function getMissAnimationDuration(animating: boolean): number {
+  return animating ? MISS_MOVE_ANIMATION_MS : 0;
+}
+
+/** True while the user should not drag pieces during a miss/refutation sequence. */
+export function isMissInputLocked(
+  sequence: MissSequenceState | null,
+  animating: boolean,
+): boolean {
+  if (!sequence) {
+    return false;
+  }
+  return (
+    sequence.phase === 'wrong' ||
+    sequence.phase === 'refutation' ||
+    animating
+  );
+}
+
+/**
+ * Prefer miss-sequence destination X when a refutation sequence is active;
+ * otherwise fall back to snap-back incorrect feedback (origin square).
+ */
+export function resolveIncorrectMoveSquare(
+  sequence: MissSequenceState | null,
+  missIncorrectSquare: string | null,
+  fallbackIncorrectSquare: string | null,
+): string | null {
+  if (sequence) {
+    return missIncorrectSquare;
+  }
+  return fallbackIncorrectSquare;
+}
