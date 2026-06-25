@@ -2,6 +2,11 @@ import { useCallback, useMemo } from 'react';
 import type { ChessboardArrow } from '../../chessboard/lastMoveArrow';
 import type { AnalysisEngineOptions } from '../../engine/types';
 import { uciFromDrop } from '../uciFromDrop';
+import {
+  getMissAnimationDuration,
+  isMissInputLocked,
+  type MissSequencePhase,
+} from './missDisplay';
 import { refutationEngineOptions } from './refutation';
 import { useMissSequence } from './useMissSequence';
 
@@ -67,6 +72,12 @@ export function useMissBoard({
   ]);
 
   const boardPosition = missSequence.display.fen ?? positionFen;
+  const { display, sequence } = missSequence;
+  const phase: MissSequencePhase | null = sequence?.phase ?? null;
+  const incorrectMoveSquare = sequence ? display.incorrectMoveSquare : null;
+  const refutationMoveSquare = display.refutationMoveSquare;
+  const animationDuration = getMissAnimationDuration(display.animating);
+  const inputLocked = isMissInputLocked(sequence, display.animating);
 
   const wrapDropHandler = useCallback(
     (
@@ -109,8 +120,13 @@ export function useMissBoard({
     refutation: missSequence.refutation,
     customArrows,
     boardPosition,
-    boardAnimating: missSequence.display.animating,
-    lastMoveUci: missSequence.display.lastMoveUci,
+    boardAnimating: display.animating,
+    lastMoveUci: display.lastMoveUci,
+    incorrectMoveSquare,
+    refutationMoveSquare,
+    animationDuration,
+    inputLocked,
+    phase,
     wrapDropHandler,
   };
 }
