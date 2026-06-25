@@ -32,6 +32,7 @@ export class StockfishBrowserEngine {
     fen: string;
     depth: number;
     multiPv: number;
+    movetime?: number;
     generation: number;
   } | null = null;
   private dispatchedSearchGeneration = 0;
@@ -258,7 +259,12 @@ export class StockfishBrowserEngine {
     });
   }
 
-  analyze(fen: string, depth: number, multiPv: number): void {
+  analyze(
+    fen: string,
+    depth: number,
+    multiPv: number,
+    movetime?: number,
+  ): void {
     if (!this.worker || !this.ready || this.disposed) {
       return;
     }
@@ -284,7 +290,7 @@ export class StockfishBrowserEngine {
       return;
     }
 
-    this.pendingSearch = { fen, depth, multiPv, generation };
+    this.pendingSearch = { fen, depth, multiPv, movetime, generation };
     this.analysisFen = fen;
     this.lineMap.clear();
     this.setEvaluation(
@@ -322,7 +328,11 @@ export class StockfishBrowserEngine {
     this.searching = true;
     this.worker.postMessage(`setoption name MultiPV value ${pending.multiPv}`);
     this.worker.postMessage(`position fen ${pending.fen}`);
-    this.worker.postMessage(`go depth ${pending.depth}`);
+    if (pending.movetime != null && pending.movetime > 0) {
+      this.worker.postMessage(`go movetime ${pending.movetime}`);
+    } else {
+      this.worker.postMessage(`go depth ${pending.depth}`);
+    }
   }
 
   stop(): void {

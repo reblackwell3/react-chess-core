@@ -19,6 +19,7 @@ export type SubscriberOptions = {
   enabled: boolean;
   depth: number;
   multiPv: number;
+  movetime?: number;
   priority: number;
 };
 
@@ -52,6 +53,7 @@ export const normalizeSubscriberOptions = (
   enabled: options.enabled ?? true,
   depth: options.depth ?? 16,
   multiPv: options.multiPv ?? 2,
+  movetime: options.movetime,
   priority: options.priority ?? 0,
 });
 
@@ -135,8 +137,8 @@ export const AnalysisEngineProvider = ({
       return;
     }
 
-    const { fen, depth, multiPv } = active.options;
-    const key = `${active.id}|${fen}|${depth}|${multiPv}`;
+    const { fen, depth, multiPv, movetime } = active.options;
+    const key = `${active.id}|${fen}|${depth}|${multiPv}|${movetime ?? ''}`;
     if (key === activeKeyRef.current) {
       return;
     }
@@ -147,7 +149,7 @@ export const AnalysisEngineProvider = ({
     }
     scheduleRef.current = window.setTimeout(() => {
       scheduleRef.current = null;
-      engine.analyze(fen, depth, multiPv);
+      engine.analyze(fen, depth, multiPv, movetime);
     }, 75);
   }, [notifyAll, pickActive]);
 

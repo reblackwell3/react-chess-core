@@ -1,12 +1,19 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
+import { usePlayTimeEngineEvaluation } from '../../engine/PlayTimeEngineContext';
 import { useAnalysisEngine } from '../../engine/useAnalysisEngine';
 import type { AnalysisEngineOptions } from '../../engine/types';
 import {
   fenAfterUci,
+  lineEvalCpForGap,
   refutationEvalGapCp,
+  refutationFallbackEngineOptions,
   refutationFromEvaluation,
   type RefutationResult,
 } from './refutation';
+import {
+  findSetupLineByFirstMove,
+  tryRefutationFromSetupEvaluation,
+} from './refutationFromSetupLines';
 
 export function useMissRefutation(
   setupFen: string | null,
@@ -15,31 +22,101 @@ export function useMissRefutation(
   enabled: boolean,
   engineOptions: AnalysisEngineOptions,
 ): RefutationResult {
+  const playTime = usePlayTimeEngineEvaluation();
+
+  const setupEvaluation = useMemo(() => {
+    if (
+      !setupFen ||
+      !playTime ||
+      playTime.setupFen !== setupFen ||
+      playTime.evaluation.lines.length === 0
+    ) {
+      return null;
+    }
+    return playTime.evaluation;
+  }, [playTime, setupFen]);
+
+  const cacheResult = useMemo(() => {
+    if (!enabled || !setupFen || !attemptedUci || !setupEvaluation) {
+      return null;
+    }
+    return tryRefutationFromSetupEvaluation(
+      setupFen,
+      setupEvaluation,
+      attemptedUci,
+      expectedUci,
+    );
+  }, [attemptedUci, enabled, expectedUci, setupEvaluation, setupFen]);
+
+  const cacheHit = cacheResult != null;
+
   const fenAfterWrong = useMemo(() => {
+    if (cacheResult) {
+      return cacheResult.fenAfterWrong;
+    }
     if (!setupFen || !attemptedUci) {
       return null;
     }
     return fenAfterUci(setupFen, attemptedUci);
-  }, [setupFen, attemptedUci]);
+  }, [attemptedUci, cacheResult, setupFen]);
 
   const fenAfterCorrect = useMemo(() => {
     if (!setupFen || !expectedUci) {
       return null;
     }
     return fenAfterUci(setupFen, expectedUci);
-  }, [setupFen, expectedUci]);
+  }, [expectedUci, setupFen]);
+
+  const fallbackEngine = useMemo(
+    () => ({
+      ...refutationFallbackEngineOptions,
+      ...engineOptions,
+    }),
+    [engineOptions],
+  );
+
+  const expectedInSetupCache = useMemo(() => {
+    if (!expectedUci || !setupEvaluation) {
+      return false;
+    }
+    return findSetupLineByFirstMove(setupEvaluation.lines, expectedUci) != null;
+  }, [expectedUci, setupEvaluation]);
+
+  const runWrongEngine = enabled && Boolean(fenAfterWrong) && !cacheHit;
+  const runCorrectEngine =
+    enabled &&
+    Boolean(fenAfterCorrect) &&
+    !cacheHit &&
+    !expectedInSetupCache;
 
   const wrongEvaluation = useAnalysisEngine(fenAfterWrong ?? '', {
-    ...engineOptions,
-    enabled: enabled && Boolean(fenAfterWrong),
+    ...fallbackEngine,
+    enabled: runWrongEngine,
     shared: false,
   });
 
   const correctEvaluation = useAnalysisEngine(fenAfterCorrect ?? '', {
-    ...engineOptions,
-    enabled: enabled && Boolean(fenAfterCorrect),
+    ...fallbackEngine,
+    enabled: runCorrectEngine,
     shared: false,
   });
+
+  useEffect(() => {
+    if (!enabled || !playTime) {
+      return undefined;
+    }
+    if (cacheHit || runWrongEngine || runCorrectEngine) {
+      playTime.pauseAnalysis();
+      return () => playTime.resumeAnalysis();
+    }
+    return undefined;
+  }, [
+    cacheHit,
+    enabled,
+    playTime,
+    runCorrectEngine,
+    runWrongEngine,
+  ]);
 
   return useMemo(() => {
     if (!fenAfterWrong) {
@@ -53,19 +130,47 @@ export function useMissRefutation(
       };
     }
 
+    if (cacheResult) {
+      return {
+        fenAfterWrong: cacheResult.fenAfterWrong,
+        refutationUci: cacheResult.refutationUci,
+        refutationSan: cacheResult.refutationSan,
+        refutationLine: cacheResult.refutationLine,
+        loading: false,
+        error: null,
+      };
+    }
+
     const evalGapApplies = Boolean(fenAfterCorrect);
-    const evalGapCp = evalGapApplies
-      ? refutationEvalGapCp(wrongEvaluation, correctEvaluation)
-      : null;
-    const evalGapLoading =
-      evalGapApplies &&
-      evalGapCp === null &&
-      wrongEvaluation.status !== 'error' &&
-      correctEvaluation.status !== 'error' &&
-      (correctEvaluation.status === 'loading' ||
-        correctEvaluation.status === 'analyzing' ||
-        wrongEvaluation.status === 'loading' ||
-        wrongEvaluation.status === 'analyzing');
+    let evalGapCp: number | null = null;
+    let evalGapLoading = false;
+
+    if (evalGapApplies && expectedInSetupCache && setupEvaluation && expectedUci) {
+      const wrongLine = findSetupLineByFirstMove(
+        setupEvaluation.lines,
+        attemptedUci ?? '',
+      );
+      const correctLine =
+        findSetupLineByFirstMove(setupEvaluation.lines, expectedUci) ??
+        setupEvaluation.lines[0];
+      if (wrongLine && correctLine) {
+        const wrongCp = lineEvalCpForGap(wrongLine);
+        const correctCp = lineEvalCpForGap(correctLine);
+        if (wrongCp != null && correctCp != null) {
+          evalGapCp = correctCp - wrongCp;
+        }
+      }
+    } else if (evalGapApplies) {
+      evalGapCp = refutationEvalGapCp(wrongEvaluation, correctEvaluation);
+      evalGapLoading =
+        evalGapCp === null &&
+        wrongEvaluation.status !== 'error' &&
+        correctEvaluation.status !== 'error' &&
+        (correctEvaluation.status === 'loading' ||
+          correctEvaluation.status === 'analyzing' ||
+          wrongEvaluation.status === 'loading' ||
+          wrongEvaluation.status === 'analyzing');
+    }
 
     return {
       fenAfterWrong,
@@ -77,5 +182,15 @@ export function useMissRefutation(
         evalGapLoading,
       ),
     };
-  }, [fenAfterCorrect, fenAfterWrong, correctEvaluation, wrongEvaluation]);
+  }, [
+    attemptedUci,
+    cacheResult,
+    correctEvaluation,
+    expectedInSetupCache,
+    expectedUci,
+    fenAfterCorrect,
+    fenAfterWrong,
+    setupEvaluation,
+    wrongEvaluation,
+  ]);
 }

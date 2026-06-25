@@ -4,15 +4,24 @@ export {
   fenAfterUci,
   lineEvalCpForGap,
   refutationEngineOptions,
+  refutationFallbackEngineOptions,
   refutationEvalGapCp,
   refutationFromEvaluation,
   type RefutationResult,
 } from './refutation';
 export {
+  SETUP_REFUTATION_MIN_DEPTH,
+  findSetupLineByFirstMove,
+  setupRefutationEvalGapCp,
+  tryRefutationFromSetupEvaluation,
+  type SetupRefutationResult,
+} from './refutationFromSetupLines';
+export {
   MISS_MOVE_ANIMATION_MS,
   MISS_REFUTATION_MAX_WAIT_MS,
   MISS_REFUTATION_PAUSE_MS,
   MISS_WRONG_PAUSE_MS,
+  REFUTATION_RESPONSE_BUDGET_MS,
   getMissDisplay,
   type MissDisplay,
   type MissSequencePhase,

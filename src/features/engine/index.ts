@@ -5,4 +5,5 @@ export * from './parseUciInfo';
 export * from './StockfishBrowserEngine';
 export * from './isAnalyzableFen';
 export * from './AnalysisEngineContext';
+export * from './PlayTimeEngineContext';
 export * from './useAnalysisEngine';

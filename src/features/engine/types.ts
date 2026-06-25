@@ -29,6 +29,8 @@ export type AnalysisEngineOptions = {
   enabled?: boolean;
   depth?: number;
   multiPv?: number;
+  /** Cap search time in ms (`go movetime`). When set, depth is an upper bound only. */
+  movetime?: number;
   /** URL to stockfish-18-lite-single.js (host must serve .wasm alongside it). */
   scriptUrl?: string;
   /**

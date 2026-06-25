@@ -24,6 +24,13 @@ export const refutationEngineOptions: AnalysisEngineOptions = {
   multiPv: 1,
 };
 
+/** On-demand refutation when setup-PV cache misses. */
+export const refutationFallbackEngineOptions: AnalysisEngineOptions = {
+  depth: 10,
+  multiPv: 1,
+  movetime: 500,
+};
+
 export function fenAfterUci(fen: string, uci: string): string | null {
   const chess = new Chess(fen);
   if (!applyUciMove(chess as unknown as Parameters<typeof applyUciMove>[0], uci)) {
