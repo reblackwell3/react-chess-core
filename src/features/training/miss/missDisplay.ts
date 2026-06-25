@@ -20,10 +20,12 @@ export type MissDisplay = {
   refutationMoveSquare: string | null;
 };
 
-/** Legacy export; wrong-phase timing now advances immediately after refutation analysis. */
-export const MISS_WRONG_PAUSE_MS = 450;
+/** Wall-clock budget from wrong-move start to refutation visible (incl. animation). */
+export const REFUTATION_RESPONSE_BUDGET_MS = 1000;
+export const MISS_WRONG_PAUSE_MS = 120;
 export const MISS_REFUTATION_PAUSE_MS = 900;
-export const MISS_REFUTATION_MAX_WAIT_MS = 4000;
+/** Max wait for fallback engine before skipping refutation (within response budget). */
+export const MISS_REFUTATION_MAX_WAIT_MS = 550;
 export const MISS_MOVE_ANIMATION_MS = 220;
 
 function moveArrow(

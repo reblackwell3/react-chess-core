@@ -29,6 +29,7 @@ export const useAnalysisEngine = (
     enabled = true,
     depth = 16,
     multiPv = 2,
+    movetime,
     priority = 0,
     scriptUrl = DEFAULT_STOCKFISH_SCRIPT_URL,
   } = options;
@@ -43,7 +44,7 @@ export const useAnalysisEngine = (
 
   const subscriberOptions = useMemo(
     () => normalizeSubscriberOptions(fen, options),
-    [fen, enabled, depth, multiPv, priority],
+    [fen, enabled, depth, multiPv, movetime, priority],
   );
 
   useLayoutEffect(() => {
@@ -137,13 +138,13 @@ export const useAnalysisEngine = (
 
     const engine = engineRef.current;
     const timer = window.setTimeout(() => {
-      engine.analyze(fen, depth, multiPv);
+      engine.analyze(fen, depth, multiPv, movetime);
     }, 75);
 
     return () => {
       window.clearTimeout(timer);
     };
-  }, [useShared, enabled, engineReady, fen, depth, multiPv]);
+  }, [useShared, enabled, engineReady, fen, depth, multiPv, movetime]);
 
   return useMemo(() => {
     if (evaluation.fen !== fen) {
