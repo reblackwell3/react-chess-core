@@ -46,6 +46,8 @@ export interface HighlightChessboardProps {
   lineContext?: ChessboardLineContext;
   /** Enable click-to-move when `onPieceDrop` is provided. Defaults to true. */
   clickToMove?: boolean;
+  /** Show selected-square / move-target overlays for click-to-move. Defaults to true. */
+  clickToMoveHighlight?: boolean;
   [key: string]: any;
 }
 
@@ -58,6 +60,7 @@ export const HighlightChessboard = ({
   lastMoveUci,
   lineContext,
   clickToMove,
+  clickToMoveHighlight = true,
   customSquareStyles: extraSquareStyles,
   customArrows,
   customBoardStyle,
@@ -101,7 +104,7 @@ export const HighlightChessboard = ({
   const checkStyles = getCheckHighlighting(checkSquare);
   const feedbackStyles = getFeedbackHighlighting(hintSquare);
   const customSquareStyles = {
-    ...clickSquareStyles,
+    ...(clickToMoveHighlight ? clickSquareStyles : {}),
     ...checkStyles,
     ...feedbackStyles,
     ...extraSquareStyles,
