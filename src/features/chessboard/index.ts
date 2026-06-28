@@ -6,7 +6,6 @@ export * from './CorrectMoveCheckBadge';
 export * from './IncorrectMoveXBadge';
 export * from './RefutationMoveBadge';
 export * from './BoardCompleteCheckOverlay';
-export * from './BoardYourMoveAgainOverlay';
 export * from './boardSquareHighlightColors';
 export * from './boardArrowColors';
 export * from './lastMoveArrow';
