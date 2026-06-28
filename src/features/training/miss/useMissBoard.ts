@@ -18,6 +18,7 @@ export function useMissBoard({
   positionFen,
   answerArrowColor,
   autoShowWrongMoves = true,
+  snapBackOnWrong = false,
   engineOptions,
 }: {
   feedback: MissFeedback;
@@ -25,6 +26,7 @@ export function useMissBoard({
   positionFen: string;
   answerArrowColor: string;
   autoShowWrongMoves?: boolean;
+  snapBackOnWrong?: boolean;
   engineOptions?: AnalysisEngineOptions;
 }) {
   const refutationEngine = useMemo(
@@ -41,6 +43,7 @@ export function useMissBoard({
     refutationEngine,
     answerArrowColor,
     autoShowWrongMoves,
+    snapBackOnWrong,
   );
 
   const customArrows = useMemo<ChessboardArrow[]>(() => {
