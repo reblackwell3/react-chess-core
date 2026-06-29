@@ -1,4 +1,5 @@
 import { useEffect, useMemo } from 'react';
+import { uciPvToSan } from '../../engine/formatEvaluation';
 import { usePlayTimeEngineEvaluation } from '../../engine/PlayTimeEngineContext';
 import { useAnalysisEngine } from '../../engine/useAnalysisEngine';
 import type { AnalysisEngineOptions } from '../../engine/types';
@@ -15,12 +16,18 @@ import {
   tryRefutationFromSetupEvaluation,
 } from './refutationFromSetupLines';
 
+export type KnownRefutation = {
+  uci: string;
+  san?: string | null;
+};
+
 export function useMissRefutation(
   setupFen: string | null,
   attemptedUci: string | null,
   expectedUci: string | null,
   enabled: boolean,
   engineOptions: AnalysisEngineOptions,
+  knownRefutation: KnownRefutation | null = null,
 ): RefutationResult {
   const playTime = usePlayTimeEngineEvaluation();
 
@@ -119,6 +126,29 @@ export function useMissRefutation(
   ]);
 
   return useMemo(() => {
+    if (
+      enabled &&
+      knownRefutation?.uci &&
+      setupFen &&
+      attemptedUci
+    ) {
+      const fenAfterWrongMove = fenAfterUci(setupFen, attemptedUci);
+      if (fenAfterWrongMove) {
+        const refutationSan =
+          knownRefutation.san ??
+          uciPvToSan(fenAfterWrongMove, [knownRefutation.uci])[0] ??
+          knownRefutation.uci;
+        return {
+          fenAfterWrong: fenAfterWrongMove,
+          refutationUci: knownRefutation.uci,
+          refutationSan,
+          refutationLine: null,
+          loading: false,
+          error: null,
+        };
+      }
+    }
+
     if (!fenAfterWrong) {
       return {
         fenAfterWrong: null,
@@ -190,7 +220,10 @@ export function useMissRefutation(
     expectedUci,
     fenAfterCorrect,
     fenAfterWrong,
+    knownRefutation,
     setupEvaluation,
+    setupFen,
+    enabled,
     wrongEvaluation,
   ]);
 }

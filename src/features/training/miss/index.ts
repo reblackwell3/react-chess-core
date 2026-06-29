@@ -30,6 +30,6 @@ export {
   type MissSequencePhase,
   type MissSequenceState,
 } from './missDisplay';
-export { useMissRefutation } from './useMissRefutation';
+export { useMissRefutation, type KnownRefutation } from './useMissRefutation';
 export { useMissSequence } from './useMissSequence';
 export { useMissBoard } from './useMissBoard';

@@ -10,11 +10,13 @@ import {
   type MissSequencePhase,
   type MissSequenceState,
 } from './missDisplay';
-import { useMissRefutation } from './useMissRefutation';
+import { useMissRefutation, type KnownRefutation } from './useMissRefutation';
 
 export type { MissSequencePhase, MissDisplay };
 
 type MissSequence = MissSequenceState;
+
+export type { KnownRefutation };
 
 export function useMissSequence(
   feedback: 'correct' | 'incorrect' | null,
@@ -23,6 +25,7 @@ export function useMissSequence(
   answerArrowColor: string,
   autoShowWrongMoves: boolean,
   snapBackOnWrong = false,
+  knownRefutation: KnownRefutation | null = null,
 ) {
   const [sequence, setSequence] = useState<MissSequence | null>(null);
 
@@ -32,6 +35,7 @@ export function useMissSequence(
     expectedUci,
     sequence != null,
     engineOptions,
+    knownRefutation,
   );
 
   const startSequence = useCallback(

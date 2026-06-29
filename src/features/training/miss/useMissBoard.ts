@@ -8,7 +8,7 @@ import {
   type MissSequencePhase,
 } from './missDisplay';
 import { refutationEngineOptions } from './refutation';
-import { useMissSequence } from './useMissSequence';
+import { useMissSequence, type KnownRefutation } from './useMissSequence';
 
 type MissFeedback = 'correct' | 'incorrect' | null;
 
@@ -20,6 +20,7 @@ export function useMissBoard({
   autoShowWrongMoves = true,
   snapBackOnWrong = false,
   engineOptions,
+  knownRefutation = null,
 }: {
   feedback: MissFeedback;
   expectedUci: string | null;
@@ -28,6 +29,7 @@ export function useMissBoard({
   autoShowWrongMoves?: boolean;
   snapBackOnWrong?: boolean;
   engineOptions?: AnalysisEngineOptions;
+  knownRefutation?: KnownRefutation | null;
 }) {
   const refutationEngine = useMemo(
     () => ({
@@ -44,6 +46,7 @@ export function useMissBoard({
     answerArrowColor,
     autoShowWrongMoves,
     snapBackOnWrong,
+    knownRefutation,
   );
 
   const customArrows = useMemo<ChessboardArrow[]>(() => {
