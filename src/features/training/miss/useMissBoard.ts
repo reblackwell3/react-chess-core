@@ -19,6 +19,7 @@ export function useMissBoard({
   answerArrowColor,
   autoShowWrongMoves = true,
   engineOptions,
+  setupCacheTargetDepth,
 }: {
   feedback: MissFeedback;
   expectedUci: string | null;
@@ -26,6 +27,8 @@ export function useMissBoard({
   answerArrowColor: string;
   autoShowWrongMoves?: boolean;
   engineOptions?: AnalysisEngineOptions;
+  /** Play-time engine depth; instant refutation cache requires this on the wrong line. */
+  setupCacheTargetDepth?: number;
 }) {
   const refutationEngine = useMemo(
     () => ({
@@ -41,6 +44,7 @@ export function useMissBoard({
     refutationEngine,
     answerArrowColor,
     autoShowWrongMoves,
+    setupCacheTargetDepth,
   );
 
   const customArrows = useMemo<ChessboardArrow[]>(() => {

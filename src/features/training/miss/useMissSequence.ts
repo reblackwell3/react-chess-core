@@ -22,6 +22,7 @@ export function useMissSequence(
   engineOptions: AnalysisEngineOptions,
   answerArrowColor: string,
   autoShowWrongMoves: boolean,
+  setupCacheTargetDepth?: number,
 ) {
   const [sequence, setSequence] = useState<MissSequence | null>(null);
 
@@ -31,6 +32,7 @@ export function useMissSequence(
     expectedUci,
     sequence != null,
     engineOptions,
+    setupCacheTargetDepth,
   );
 
   const startSequence = useCallback(
