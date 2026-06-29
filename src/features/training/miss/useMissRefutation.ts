@@ -19,6 +19,8 @@ import {
 export type KnownRefutation = {
   uci: string;
   san?: string | null;
+  /** When set, only use this refutation for the matching wrong-move UCI. */
+  onlyForAttemptedUci?: string;
 };
 
 export function useMissRefutation(
@@ -132,20 +134,28 @@ export function useMissRefutation(
       setupFen &&
       attemptedUci
     ) {
-      const fenAfterWrongMove = fenAfterUci(setupFen, attemptedUci);
-      if (fenAfterWrongMove) {
-        const refutationSan =
-          knownRefutation.san ??
-          uciPvToSan(fenAfterWrongMove, [knownRefutation.uci])[0] ??
-          knownRefutation.uci;
-        return {
-          fenAfterWrong: fenAfterWrongMove,
-          refutationUci: knownRefutation.uci,
-          refutationSan,
-          refutationLine: null,
-          loading: false,
-          error: null,
-        };
+      const onlyFor = knownRefutation.onlyForAttemptedUci;
+      if (
+        onlyFor &&
+        attemptedUci.toLowerCase() !== onlyFor.toLowerCase()
+      ) {
+        // Fall through to engine/cache for other wrong moves.
+      } else {
+        const fenAfterWrongMove = fenAfterUci(setupFen, attemptedUci);
+        if (fenAfterWrongMove) {
+          const refutationSan =
+            knownRefutation.san ??
+            uciPvToSan(fenAfterWrongMove, [knownRefutation.uci])[0] ??
+            knownRefutation.uci;
+          return {
+            fenAfterWrong: fenAfterWrongMove,
+            refutationUci: knownRefutation.uci,
+            refutationSan,
+            refutationLine: null,
+            loading: false,
+            error: null,
+          };
+        }
       }
     }
 

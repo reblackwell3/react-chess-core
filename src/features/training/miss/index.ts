@@ -31,5 +31,5 @@ export {
   type MissSequenceState,
 } from './missDisplay';
 export { useMissRefutation, type KnownRefutation } from './useMissRefutation';
-export { useMissSequence } from './useMissSequence';
+export { useMissSequence, type MissSequenceOptions } from './useMissSequence';
 export { useMissBoard } from './useMissBoard';

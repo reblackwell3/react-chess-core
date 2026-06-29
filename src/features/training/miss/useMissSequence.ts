@@ -18,6 +18,13 @@ type MissSequence = MissSequenceState;
 
 export type { KnownRefutation };
 
+export type MissSequenceOptions = {
+  /** How long to hold the refutation on the board before advancing. */
+  refutationPauseMs?: number;
+  /** End the sequence after refutation instead of showing the answer arrow. */
+  clearAfterRefutation?: boolean;
+};
+
 export function useMissSequence(
   feedback: 'correct' | 'incorrect' | null,
   expectedUci: string | null,
@@ -26,7 +33,11 @@ export function useMissSequence(
   autoShowWrongMoves: boolean,
   snapBackOnWrong = false,
   knownRefutation: KnownRefutation | null = null,
+  options: MissSequenceOptions = {},
 ) {
+  const refutationPauseMs =
+    options.refutationPauseMs ?? MISS_REFUTATION_PAUSE_MS;
+  const clearAfterRefutation = options.clearAfterRefutation === true;
   const [sequence, setSequence] = useState<MissSequence | null>(null);
 
   const refutation = useMissRefutation(
@@ -89,6 +100,9 @@ export function useMissSequence(
         if (!current || current.phase !== 'wrong') {
           return current;
         }
+        if (refutation.loading && Date.now() < deadline) {
+          return current;
+        }
         return {
           ...current,
           phase: refutation.refutationUci ? 'refutation' : 'answer',
@@ -127,15 +141,19 @@ export function useMissSequence(
     }
 
     const delay = window.setTimeout(() => {
-      setSequence((current) =>
-        current?.phase === 'refutation'
-          ? { ...current, phase: 'answer' }
-          : current,
-      );
-    }, MISS_REFUTATION_PAUSE_MS);
+      setSequence((current) => {
+        if (current?.phase !== 'refutation') {
+          return current;
+        }
+        if (clearAfterRefutation) {
+          return null;
+        }
+        return { ...current, phase: 'answer' };
+      });
+    }, refutationPauseMs);
 
     return () => window.clearTimeout(delay);
-  }, [sequence]);
+  }, [clearAfterRefutation, refutationPauseMs, sequence]);
 
   const display = useMemo(
     (): MissDisplay =>
