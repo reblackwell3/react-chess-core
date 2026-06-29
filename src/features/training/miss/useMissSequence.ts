@@ -22,7 +22,6 @@ export function useMissSequence(
   engineOptions: AnalysisEngineOptions,
   answerArrowColor: string,
   autoShowWrongMoves: boolean,
-  snapBackOnWrong = false,
 ) {
   const [sequence, setSequence] = useState<MissSequence | null>(null);
 
@@ -140,14 +139,12 @@ export function useMissSequence(
         expectedUci,
         refutation.refutationUci,
         answerArrowColor,
-        { snapBackOnWrong },
       ),
     [
       answerArrowColor,
       expectedUci,
       refutation.refutationUci,
       sequence,
-      snapBackOnWrong,
     ],
   );
 

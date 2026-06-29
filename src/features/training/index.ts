@@ -1,6 +1,7 @@
 export * from './uciFromDrop';
 export * from './expectedMoveDrop';
 export * from './fenAtPly';
+export * from './gameReplayUtils';
 export * from './useBoardRevision';
 export * from './correctMoveFeedbackMs';
 export * from './useCorrectMoveFeedback';
