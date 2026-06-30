@@ -33,6 +33,7 @@ export function useMissSequence(
   autoShowWrongMoves: boolean,
   snapBackOnWrong = false,
   knownRefutation: KnownRefutation | null = null,
+  setupCacheTargetDepth?: number,
   options: MissSequenceOptions = {},
 ) {
   const refutationPauseMs =
@@ -47,6 +48,7 @@ export function useMissSequence(
     sequence != null,
     engineOptions,
     knownRefutation,
+    setupCacheTargetDepth,
   );
 
   const startSequence = useCallback(
@@ -162,14 +164,12 @@ export function useMissSequence(
         expectedUci,
         refutation.refutationUci,
         answerArrowColor,
-        { snapBackOnWrong },
       ),
     [
       answerArrowColor,
       expectedUci,
       refutation.refutationUci,
       sequence,
-      snapBackOnWrong,
     ],
   );
 

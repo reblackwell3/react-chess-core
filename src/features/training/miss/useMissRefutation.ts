@@ -12,6 +12,7 @@ import {
   type RefutationResult,
 } from './refutation';
 import {
+  DEFAULT_SETUP_REFUTATION_TARGET_DEPTH,
   findSetupLineByFirstMove,
   tryRefutationFromSetupEvaluation,
 } from './refutationFromSetupLines';
@@ -30,6 +31,7 @@ export function useMissRefutation(
   enabled: boolean,
   engineOptions: AnalysisEngineOptions,
   knownRefutation: KnownRefutation | null = null,
+  setupCacheTargetDepth: number = DEFAULT_SETUP_REFUTATION_TARGET_DEPTH,
 ): RefutationResult {
   const playTime = usePlayTimeEngineEvaluation();
 
@@ -54,8 +56,16 @@ export function useMissRefutation(
       setupEvaluation,
       attemptedUci,
       expectedUci,
+      { targetDepth: setupCacheTargetDepth },
     );
-  }, [attemptedUci, enabled, expectedUci, setupEvaluation, setupFen]);
+  }, [
+    attemptedUci,
+    enabled,
+    expectedUci,
+    setupCacheTargetDepth,
+    setupEvaluation,
+    setupFen,
+  ]);
 
   const cacheHit = cacheResult != null;
 

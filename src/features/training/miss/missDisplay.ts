@@ -52,26 +52,12 @@ function uciDestinationSquare(uci: string | null | undefined): string | null {
   return uci.slice(2, 4);
 }
 
-function uciOriginSquare(uci: string | null | undefined): string | null {
-  if (!uci || uci.length < 4) {
-    return null;
-  }
-  return uci.slice(0, 2);
-}
-
-export type GetMissDisplayOptions = {
-  /** Keep the quiz position visible and mark the drag origin with a red X. */
-  snapBackOnWrong?: boolean;
-};
-
 export function getMissDisplay(
   sequence: MissSequenceState | null,
   expectedUci: string | null,
   refutationUci: string | null,
   answerArrowColor: string,
-  options: GetMissDisplayOptions = {},
 ): MissDisplay {
-  const snapBackOnWrong = options.snapBackOnWrong === true;
   if (!sequence) {
     return {
       fen: null,
@@ -89,26 +75,14 @@ export function getMissDisplay(
   switch (phase) {
     case 'wrong':
       return {
-        fen: snapBackOnWrong ? setupFen : (fenAfterWrong ?? setupFen),
+        fen: fenAfterWrong ?? setupFen,
         arrows: [],
-        lastMoveUci: snapBackOnWrong ? null : attemptedUci,
+        lastMoveUci: attemptedUci,
         animating: false,
-        incorrectMoveSquare: snapBackOnWrong
-          ? uciOriginSquare(attemptedUci)
-          : uciDestinationSquare(attemptedUci),
+        incorrectMoveSquare: uciDestinationSquare(attemptedUci),
         refutationMoveSquare: null,
       };
     case 'refutation': {
-      if (snapBackOnWrong) {
-        return {
-          fen: setupFen,
-          arrows: moveArrow(refutationUci, 'rgba(239, 108, 0, 0.85)'),
-          lastMoveUci: null,
-          animating: false,
-          incorrectMoveSquare: null,
-          refutationMoveSquare: uciDestinationSquare(refutationUci),
-        };
-      }
       const fenAfterRefutation =
         fenAfterWrong && refutationUci
           ? fenAfterUci(fenAfterWrong, refutationUci)

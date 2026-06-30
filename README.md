@@ -31,18 +31,21 @@ Storybook: `npm run storybook` → http://localhost:6007
 npm install react-chess-core
 ```
 
-**Peer dependencies:** `react`, `react-chessboard`, `chess.js`
+**Peer dependencies:** `react`, `react-chessboard`, `chess.js`, `@mui/material` (for eval bar components)
 
 For Stockfish in the browser:
 
 ```bash
 npm install stockfish
-npm run copy:stockfish   # in your app, or copy WASM to public/stockfish/
+npm run copy:stockfish   # copies WASM/JS to public/stockfish/ in this package
 ```
+
+Host apps can call the same script via `node node_modules/react-chess-core/scripts/copy-stockfish.mjs` or keep a thin postinstall wrapper.
 
 ---
 
 ## Exports
 
 - **Chessboard:** `ThemeProvider`, `useChessboardTheme`, `HighlightChessboard`, `boardSquareHighlightColors`
-- **Engine:** `useAnalysisEngine`, `StockfishBrowserEngine`, `EngineEvaluationPanel`, `isAnalyzableFen`, types/helpers
+- **Opening:** `pgnMovetextToSans`, `fenFromOpeningPgn`, `fenLineFromOpeningPgn`, `fenLineFromOpeningSans`, `fenLineFromUciMoves`
+- **Engine:** `useAnalysisEngine`, `StockfishBrowserEngine`, `BoardPositionEval`, `PositionEvalBar`, `isAnalyzableFen`, types/helpers

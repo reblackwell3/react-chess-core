@@ -7,3 +7,4 @@ export * from './isAnalyzableFen';
 export * from './AnalysisEngineContext';
 export * from './PlayTimeEngineContext';
 export * from './useAnalysisEngine';
+export * from './positionEval';

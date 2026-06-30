@@ -21,6 +21,7 @@ export function useMissBoard({
   snapBackOnWrong = false,
   engineOptions,
   knownRefutation = null,
+  setupCacheTargetDepth,
 }: {
   feedback: MissFeedback;
   expectedUci: string | null;
@@ -30,6 +31,8 @@ export function useMissBoard({
   snapBackOnWrong?: boolean;
   engineOptions?: AnalysisEngineOptions;
   knownRefutation?: KnownRefutation | null;
+  /** Play-time engine depth; instant refutation cache requires this on the wrong line. */
+  setupCacheTargetDepth?: number;
 }) {
   const refutationEngine = useMemo(
     () => ({
@@ -47,6 +50,7 @@ export function useMissBoard({
     autoShowWrongMoves,
     snapBackOnWrong,
     knownRefutation,
+    setupCacheTargetDepth,
   );
 
   const customArrows = useMemo<ChessboardArrow[]>(() => {
