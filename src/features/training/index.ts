@@ -9,3 +9,4 @@ export * from './useIncorrectMoveFeedback';
 export * from './useTrainingMoveFeedback';
 export * from './useSolutionLineRecap';
 export * from './miss';
+export * from './progressiveHintControl';

@@ -7,7 +7,7 @@ export const SOLUTION_LINE_RECAP_SLOW_PRE_MOVE_MS = 900;
 export const SOLUTION_LINE_RECAP_SLOW_ANIM_MS = 450;
 
 /** Minimum wait after the post-completion recap before auto-loading the next card. */
-export const AUTO_ADVANCE_ON_COMPLETE_DELAY_MS = 5000;
+export const AUTO_ADVANCE_ON_COMPLETE_DELAY_MS = 3000;
 
 export type SolutionLineRecapTiming = {
   /** Delay after applying a ply before advancing to the next one. */
