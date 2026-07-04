@@ -27,6 +27,6 @@ export default [
       commonjs(),
       typescript({ tsconfig: './tsconfig.json' }),
     ],
-    external: ['react', 'react-dom', 'react-chessboard', 'chess.js'],
+    external: ['react', 'react-dom', 'react-chessboard', 'chess.js', '@mui/material'],
   },
 ];

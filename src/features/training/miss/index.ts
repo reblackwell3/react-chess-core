@@ -10,10 +10,12 @@ export {
   type RefutationResult,
 } from './refutation';
 export {
+  DEFAULT_SETUP_REFUTATION_TARGET_DEPTH,
   SETUP_REFUTATION_MIN_DEPTH,
   findSetupLineByFirstMove,
   setupRefutationEvalGapCp,
   tryRefutationFromSetupEvaluation,
+  type SetupRefutationCacheOptions,
   type SetupRefutationResult,
 } from './refutationFromSetupLines';
 export {
@@ -30,6 +32,6 @@ export {
   type MissSequencePhase,
   type MissSequenceState,
 } from './missDisplay';
-export { useMissRefutation } from './useMissRefutation';
-export { useMissSequence } from './useMissSequence';
+export { useMissRefutation, type KnownRefutation } from './useMissRefutation';
+export { useMissSequence, type MissSequenceOptions } from './useMissSequence';
 export { useMissBoard } from './useMissBoard';

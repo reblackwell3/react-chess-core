@@ -1,19 +1,19 @@
 import type { ReactNode } from 'react';
-import { MultiBackend } from 'react-dnd-multi-backend';
-import { HTML5toTouch } from 'rdndmb-html5-to-touch';
+import { TouchBackend } from 'react-dnd-touch-backend';
 import { ChessboardDnDProvider as BaseChessboardDnDProvider } from 'react-chessboard';
 
+const touchMouseOptions = { enableMouseEvents: true };
+
 /**
- * HTML5 for mouse (desktop + Chrome device emulation), touch backend for real
- * mobile devices. react-chessboard alone picks TouchBackend whenever
- * `ontouchstart` is in window, which breaks mouse drags in DevTools emulation.
+ * TouchBackend for touch and mouse (enableMouseEvents). Works on real devices and
+ * avoids Chrome DevTools XL/4K Desktop HTML5Backend drag offset bugs.
  */
 export const ChessboardDnDProvider = ({
   children,
 }: {
   children: ReactNode;
 }) => (
-  <BaseChessboardDnDProvider backend={MultiBackend} options={HTML5toTouch}>
+  <BaseChessboardDnDProvider backend={TouchBackend} options={touchMouseOptions}>
     {children}
   </BaseChessboardDnDProvider>
 );

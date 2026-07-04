@@ -9,7 +9,18 @@ import {
   REFUTATION_EVAL_GAP_CP,
 } from './refutation';
 
+/** Default play-time search depth when hosts do not pass a target. */
+export const DEFAULT_SETUP_REFUTATION_TARGET_DEPTH = 10;
+
+/** @deprecated Renamed — instant cache now requires {@link DEFAULT_SETUP_REFUTATION_TARGET_DEPTH}. */
 export const SETUP_REFUTATION_MIN_DEPTH = 4;
+
+export type SetupRefutationCacheOptions = {
+  /** Wrong-move multipv line must reach at least this depth. */
+  targetDepth?: number;
+  /** When true, only use cache after play-time search completes. */
+  requireIdle?: boolean;
+};
 
 export type SetupRefutationResult = {
   fenAfterWrong: string;
@@ -52,25 +63,29 @@ const evaluationUsable = (evaluation: EngineEvaluation): boolean =>
 
 /**
  * Instant refutation from play-time multipv on the setup position.
- * Uses partial in-progress lines (`analyzing` is OK).
+ * Requires the wrong-move line to finish searching to the play-time target depth.
  */
 export function tryRefutationFromSetupEvaluation(
   setupFen: string,
   evaluation: EngineEvaluation,
   attemptedUci: string,
   expectedUci: string | null,
-  minDepth: number = SETUP_REFUTATION_MIN_DEPTH,
+  cacheOptions: SetupRefutationCacheOptions = {},
 ): SetupRefutationResult | null {
+  const targetDepth =
+    cacheOptions.targetDepth ?? DEFAULT_SETUP_REFUTATION_TARGET_DEPTH;
+  const requireIdle = cacheOptions.requireIdle ?? true;
+
   if (!evaluationUsable(evaluation)) {
     return null;
   }
 
-  if (evaluation.depth < minDepth) {
+  if (requireIdle && evaluation.status !== 'idle') {
     return null;
   }
 
   const wrongLine = findSetupLineByFirstMove(evaluation.lines, attemptedUci);
-  if (!wrongLine || wrongLine.depth < minDepth || wrongLine.pv.length < 2) {
+  if (!wrongLine || wrongLine.depth < targetDepth || wrongLine.pv.length < 2) {
     return null;
   }
 
