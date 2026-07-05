@@ -1,4 +1,5 @@
 import { useEffect, useMemo } from 'react';
+import { uciPvToSan } from '../../engine/formatEvaluation';
 import { usePlayTimeEngineEvaluation } from '../../engine/PlayTimeEngineContext';
 import { useAnalysisEngine } from '../../engine/useAnalysisEngine';
 import type { AnalysisEngineOptions } from '../../engine/types';
@@ -16,12 +17,20 @@ import {
   tryRefutationFromSetupEvaluation,
 } from './refutationFromSetupLines';
 
+export type KnownRefutation = {
+  uci: string;
+  san?: string | null;
+  /** When set, only use this refutation for the matching wrong-move UCI. */
+  onlyForAttemptedUci?: string;
+};
+
 export function useMissRefutation(
   setupFen: string | null,
   attemptedUci: string | null,
   expectedUci: string | null,
   enabled: boolean,
   engineOptions: AnalysisEngineOptions,
+  knownRefutation: KnownRefutation | null = null,
   setupCacheTargetDepth: number = DEFAULT_SETUP_REFUTATION_TARGET_DEPTH,
 ): RefutationResult {
   const playTime = usePlayTimeEngineEvaluation();
@@ -129,6 +138,37 @@ export function useMissRefutation(
   ]);
 
   return useMemo(() => {
+    if (
+      enabled &&
+      knownRefutation?.uci &&
+      setupFen &&
+      attemptedUci
+    ) {
+      const onlyFor = knownRefutation.onlyForAttemptedUci;
+      if (
+        onlyFor &&
+        attemptedUci.toLowerCase() !== onlyFor.toLowerCase()
+      ) {
+        // Fall through to engine/cache for other wrong moves.
+      } else {
+        const fenAfterWrongMove = fenAfterUci(setupFen, attemptedUci);
+        if (fenAfterWrongMove) {
+          const refutationSan =
+            knownRefutation.san ??
+            uciPvToSan(fenAfterWrongMove, [knownRefutation.uci])[0] ??
+            knownRefutation.uci;
+          return {
+            fenAfterWrong: fenAfterWrongMove,
+            refutationUci: knownRefutation.uci,
+            refutationSan,
+            refutationLine: null,
+            loading: false,
+            error: null,
+          };
+        }
+      }
+    }
+
     if (!fenAfterWrong) {
       return {
         fenAfterWrong: null,
@@ -200,7 +240,10 @@ export function useMissRefutation(
     expectedUci,
     fenAfterCorrect,
     fenAfterWrong,
+    knownRefutation,
     setupEvaluation,
+    setupFen,
+    enabled,
     wrongEvaluation,
   ]);
 }
