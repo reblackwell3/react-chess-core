@@ -36,4 +36,12 @@ describe('fenLineFromUciMoves', () => {
       'rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 2',
     );
   });
+
+  it('stops at invalid moves instead of throwing', () => {
+    const afterE4E5 =
+      'rnbqkbnr/pppp1ppp/8/4p3/4P3/8/PPPP1PPP/RNBQKBNR w KQkq - 0 2';
+    const line = fenLineFromUciMoves(afterE4E5, 'a7a5');
+
+    expect(line).toEqual([afterE4E5]);
+  });
 });
