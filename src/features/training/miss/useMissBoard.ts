@@ -144,7 +144,8 @@ export function useMissBoard({
               missSequence.clearSequence();
             } else if (
               answerArrowVisible &&
-              !resolvedPolicy.allowRetryOnIncorrect
+              !resolvedPolicy.allowRetryOnIncorrect &&
+              sequence?.phase === 'answer'
             ) {
               return false;
             } else if (sequence?.phase === 'retry') {
