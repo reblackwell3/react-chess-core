@@ -111,7 +111,8 @@ export function useMissRefutation(
   const wrongEvaluation = useAnalysisEngine(fenAfterWrong ?? '', {
     ...fallbackEngine,
     enabled: runWrongEngine,
-    shared: false,
+    shared: true,
+    priority: 10,
   });
 
   const correctEvaluation = useAnalysisEngine(fenAfterCorrect ?? '', {

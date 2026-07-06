@@ -46,10 +46,16 @@ export function useMissSequence(
   setupCacheTargetDepth?: number,
   options: MissSequenceOptions = {},
 ) {
-  const missRetryPolicy = normalizeMissRetryPolicy(
-    options.missRetryPolicy,
-    autoShowWrongMoves,
+  const missRetryPolicy = useMemo(
+    () => normalizeMissRetryPolicy(options.missRetryPolicy, autoShowWrongMoves),
+    [
+      autoShowWrongMoves,
+      options.missRetryPolicy?.allowRetryOnIncorrect,
+      options.missRetryPolicy?.maxMissAttempts,
+    ],
   );
+  const allowRetryOnIncorrect = missRetryPolicy.allowRetryOnIncorrect;
+  const maxMissAttempts = missRetryPolicy.maxMissAttempts;
   const refutationPauseMs =
     options.refutationPauseMs ?? MISS_REFUTATION_PAUSE_MS;
   const clearAfterRefutation = options.clearAfterRefutation === true;
@@ -106,74 +112,92 @@ export function useMissSequence(
   }, [feedback]);
 
   const wrongPhaseEnteredAtRef = useRef<number | null>(null);
+  const refutationPhaseEnteredAtRef = useRef<number | null>(null);
+  const refutationRef = useRef(refutation);
+  refutationRef.current = refutation;
+
+  const sequencePhase = sequence?.phase ?? null;
+  const sequenceKey = sequence
+    ? `${sequence.setupFen}:${sequence.attemptedUci}:${sequence.attemptCount}`
+    : null;
 
   useEffect(() => {
-    if (sequence?.phase === 'wrong') {
+    if (sequencePhase === 'wrong') {
       if (wrongPhaseEnteredAtRef.current === null) {
         wrongPhaseEnteredAtRef.current = Date.now();
       }
+      refutationPhaseEnteredAtRef.current = null;
       return;
     }
     wrongPhaseEnteredAtRef.current = null;
-  }, [sequence?.phase]);
+    if (sequencePhase !== 'refutation') {
+      refutationPhaseEnteredAtRef.current = null;
+    }
+  }, [sequencePhase]);
 
   useEffect(() => {
-    if (!sequence || sequence.phase !== 'wrong') {
+    if (sequencePhase !== 'wrong' || !sequenceKey) {
       return undefined;
     }
 
     const enteredAt = wrongPhaseEnteredAtRef.current ?? Date.now();
-    const deadline = enteredAt + REFUTATION_RESPONSE_BUDGET_MS;
     const earliestShow = enteredAt + wrongHoldMs;
+    const deadline = enteredAt + REFUTATION_RESPONSE_BUDGET_MS;
 
-    const advance = () => {
+    const advanceWhenReady = () => {
+      const { refutationUci, loading } = refutationRef.current;
       setSequence((current) => {
         if (!current || current.phase !== 'wrong') {
           return current;
         }
-        if (refutation.loading && Date.now() < deadline) {
+        const now = Date.now();
+        // Prefer fallback Stockfish movetime, but cap total wait at REFUTATION_RESPONSE_BUDGET_MS.
+        if (loading && now < deadline) {
           return current;
+        }
+        if (refutationUci) {
+          return {
+            ...current,
+            phase: 'refutation',
+            shownRefutationUci: refutationUci,
+          };
         }
         return {
           ...current,
-          phase: refutation.refutationUci
-            ? 'refutation'
-            : resolvePostMissPhase(missRetryPolicy, current.attemptCount),
+          phase: resolvePostMissPhase(missRetryPolicy, current.attemptCount),
         };
       });
     };
 
-    const schedule = () => {
-      const now = Date.now();
-      const hasRefutation =
-        Boolean(refutation.refutationUci) && !refutation.loading;
+    const now = Date.now();
+    const { loading } = refutationRef.current;
 
-      if (hasRefutation) {
-        return window.setTimeout(advance, Math.max(0, earliestShow - now));
-      }
+    if (now >= earliestShow && (!loading || now >= deadline)) {
+      advanceWhenReady();
+      return undefined;
+    }
 
-      if (refutation.loading) {
-        return window.setTimeout(advance, Math.max(0, deadline - now));
-      }
-
-      return window.setTimeout(advance, Math.max(0, earliestShow - now));
-    };
-
-    const timer = schedule();
+    const nextAt = now < earliestShow ? earliestShow : deadline;
+    const timer = window.setTimeout(advanceWhenReady, Math.max(0, nextAt - now));
     return () => window.clearTimeout(timer);
   }, [
-    missRetryPolicy,
     refutation.loading,
     refutation.refutationUci,
-    sequence,
+    sequenceKey,
+    sequencePhase,
     wrongHoldMs,
   ]);
 
   useEffect(() => {
-    if (!sequence || sequence.phase !== 'refutation') {
+    if (sequencePhase !== 'refutation' || !sequenceKey) {
       return undefined;
     }
 
+    if (refutationPhaseEnteredAtRef.current === null) {
+      refutationPhaseEnteredAtRef.current = Date.now();
+    }
+
+    const enteredAt = refutationPhaseEnteredAtRef.current;
     const delay = window.setTimeout(() => {
       setSequence((current) => {
         if (current?.phase !== 'refutation') {
@@ -187,10 +211,17 @@ export function useMissSequence(
           phase: resolvePostMissPhase(missRetryPolicy, current.attemptCount),
         };
       });
-    }, refutationPauseMs);
+    }, Math.max(0, refutationPauseMs - (Date.now() - enteredAt)));
 
     return () => window.clearTimeout(delay);
-  }, [clearAfterRefutation, missRetryPolicy, refutationPauseMs, sequence]);
+  }, [
+    allowRetryOnIncorrect,
+    maxMissAttempts,
+    clearAfterRefutation,
+    refutationPauseMs,
+    sequenceKey,
+    sequencePhase,
+  ]);
 
   const display = useMemo(
     (): MissDisplay =>

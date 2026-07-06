@@ -9,6 +9,8 @@ export type MissSequenceState = {
   phase: MissSequencePhase;
   /** Wrong attempts on this ply (1-based). */
   attemptCount: number;
+  /** Refutation move shown during the refutation phase (stable if engine output changes). */
+  shownRefutationUci?: string | null;
 };
 
 export type MissDisplay = {
@@ -22,13 +24,12 @@ export type MissDisplay = {
   refutationMoveSquare: string | null;
 };
 
-/** Wall-clock budget from wrong-move start to refutation visible (incl. animation). */
-export const REFUTATION_RESPONSE_BUDGET_MS = 1000;
 export const MISS_WRONG_PAUSE_MS = 120;
 export const MISS_REFUTATION_PAUSE_MS = 900;
-/** Max wait for fallback engine before skipping refutation (within response budget). */
-export const MISS_REFUTATION_MAX_WAIT_MS = 550;
 export const MISS_MOVE_ANIMATION_MS = 220;
+
+/** Max wall-clock wait from wrong-move start before advancing (prefer engine movetime within this). */
+export const REFUTATION_RESPONSE_BUDGET_MS = 1000;
 
 function moveArrow(
   uci: string | null | undefined,
@@ -85,17 +86,19 @@ export function getMissDisplay(
         refutationMoveSquare: null,
       };
     case 'refutation': {
+      const shownRefutationUci =
+        sequence.shownRefutationUci ?? refutationUci;
       const fenAfterRefutation =
-        fenAfterWrong && refutationUci
-          ? fenAfterUci(fenAfterWrong, refutationUci)
+        fenAfterWrong && shownRefutationUci
+          ? fenAfterUci(fenAfterWrong, shownRefutationUci)
           : null;
       return {
         fen: fenAfterRefutation ?? fenAfterWrong ?? setupFen,
         arrows: [],
-        lastMoveUci: refutationUci,
+        lastMoveUci: shownRefutationUci,
         animating: Boolean(fenAfterRefutation),
         incorrectMoveSquare: null,
-        refutationMoveSquare: uciDestinationSquare(refutationUci),
+        refutationMoveSquare: uciDestinationSquare(shownRefutationUci),
       };
     }
     case 'retry':

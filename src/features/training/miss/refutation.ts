@@ -24,11 +24,14 @@ export const refutationEngineOptions: AnalysisEngineOptions = {
   multiPv: 1,
 };
 
+/** Stockfish movetime for on-demand refutation when the setup-PV cache misses. */
+export const REFUTATION_FALLBACK_MOVETIME_MS = 500;
+
 /** On-demand refutation when setup-PV cache misses. */
 export const refutationFallbackEngineOptions: AnalysisEngineOptions = {
   depth: 10,
   multiPv: 1,
-  movetime: 500,
+  movetime: REFUTATION_FALLBACK_MOVETIME_MS,
 };
 
 export function fenAfterUci(fen: string, uci: string): string | null {
