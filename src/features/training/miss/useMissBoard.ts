@@ -107,7 +107,9 @@ export function useMissBoard({
           const uci = uciFromDrop(dropFen, source, target, piece);
           if (uci && uci.toLowerCase() !== expectedMoveUci.toLowerCase()) {
             missSequence.startSequence(dropFen, uci);
-          } else if (
+            return true;
+          }
+          if (
             uci &&
             uci.toLowerCase() === expectedMoveUci.toLowerCase()
           ) {

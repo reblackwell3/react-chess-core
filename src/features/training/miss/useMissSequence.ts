@@ -55,16 +55,13 @@ export function useMissSequence(
     setupCacheTargetDepth,
   );
 
-  const startSequence = useCallback(
-    (setupFen: string, attemptedUci: string) => {
-      setSequence({
-        setupFen,
-        attemptedUci,
-        phase: autoShowWrongMoves ? 'wrong' : 'retry',
-      });
-    },
-    [autoShowWrongMoves],
-  );
+  const startSequence = useCallback((setupFen: string, attemptedUci: string) => {
+    setSequence({
+      setupFen,
+      attemptedUci,
+      phase: 'wrong',
+    });
+  }, []);
 
   const clearSequence = useCallback(() => {
     setSequence(null);
@@ -92,7 +89,7 @@ export function useMissSequence(
   }, [sequence?.phase]);
 
   useEffect(() => {
-    if (!sequence || sequence.phase !== 'wrong' || !autoShowWrongMoves) {
+    if (!sequence || sequence.phase !== 'wrong') {
       return undefined;
     }
 
@@ -110,7 +107,11 @@ export function useMissSequence(
         }
         return {
           ...current,
-          phase: refutation.refutationUci ? 'refutation' : 'answer',
+          phase: refutation.refutationUci
+            ? 'refutation'
+            : autoShowWrongMoves
+              ? 'answer'
+              : 'retry',
         };
       });
     };
@@ -154,12 +155,15 @@ export function useMissSequence(
         if (clearAfterRefutation) {
           return null;
         }
-        return { ...current, phase: 'answer' };
+        return {
+          ...current,
+          phase: autoShowWrongMoves ? 'answer' : 'retry',
+        };
       });
     }, refutationPauseMs);
 
     return () => window.clearTimeout(delay);
-  }, [clearAfterRefutation, refutationPauseMs, sequence]);
+  }, [autoShowWrongMoves, clearAfterRefutation, refutationPauseMs, sequence]);
 
   const display = useMemo(
     (): MissDisplay =>
