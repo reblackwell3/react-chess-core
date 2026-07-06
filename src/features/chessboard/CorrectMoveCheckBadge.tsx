@@ -17,6 +17,7 @@ const badgeStyle: CSSProperties = {
   justifyContent: 'center',
   boxShadow: '0 1px 3px rgba(0, 0, 0, 0.35)',
   pointerEvents: 'none',
+  zIndex: 25,
 };
 
 /** Green circle with a white check, anchored to the bottom-right of a square
