@@ -9,6 +9,8 @@ export type MissSequenceState = {
   phase: MissSequencePhase;
   /** Wrong attempts on this ply (1-based). */
   attemptCount: number;
+  /** Refutation move shown during the refutation phase (stable if engine output changes). */
+  shownRefutationUci?: string | null;
 };
 
 export type MissDisplay = {
@@ -84,17 +86,19 @@ export function getMissDisplay(
         refutationMoveSquare: null,
       };
     case 'refutation': {
+      const shownRefutationUci =
+        sequence.shownRefutationUci ?? refutationUci;
       const fenAfterRefutation =
-        fenAfterWrong && refutationUci
-          ? fenAfterUci(fenAfterWrong, refutationUci)
+        fenAfterWrong && shownRefutationUci
+          ? fenAfterUci(fenAfterWrong, shownRefutationUci)
           : null;
       return {
         fen: fenAfterRefutation ?? fenAfterWrong ?? setupFen,
         arrows: [],
-        lastMoveUci: refutationUci,
+        lastMoveUci: shownRefutationUci,
         animating: Boolean(fenAfterRefutation),
         incorrectMoveSquare: null,
-        refutationMoveSquare: uciDestinationSquare(refutationUci),
+        refutationMoveSquare: uciDestinationSquare(shownRefutationUci),
       };
     }
     case 'retry':

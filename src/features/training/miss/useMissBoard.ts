@@ -47,9 +47,17 @@ export function useMissBoard({
   knownRefutation = null,
   setupCacheTargetDepth,
 }: UseMissBoardOptions) {
-  const resolvedPolicy = missRetryPolicy
-    ? normalizeMissRetryPolicy(missRetryPolicy)
-    : missRetryPolicyFromAutoShowWrongMoves(autoShowWrongMoves);
+  const resolvedPolicy = useMemo(
+    () =>
+      missRetryPolicy
+        ? normalizeMissRetryPolicy(missRetryPolicy)
+        : missRetryPolicyFromAutoShowWrongMoves(autoShowWrongMoves),
+    [
+      autoShowWrongMoves,
+      missRetryPolicy?.allowRetryOnIncorrect,
+      missRetryPolicy?.maxMissAttempts,
+    ],
+  );
 
   const refutationEngine = useMemo(
     () => ({
