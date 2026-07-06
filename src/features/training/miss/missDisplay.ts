@@ -7,6 +7,8 @@ export type MissSequenceState = {
   setupFen: string;
   attemptedUci: string;
   phase: MissSequencePhase;
+  /** Wrong attempts on this ply (1-based). */
+  attemptCount: number;
 };
 
 export type MissDisplay = {
@@ -144,6 +146,72 @@ export function isMissInputLocked(
     sequence.phase === 'refutation' ||
     animating
   );
+}
+
+/** True when the best-move answer arrow should be visible for an incorrect attempt. */
+export function isAnswerArrowVisible(
+  feedback: 'correct' | 'incorrect' | null,
+  sequence: MissSequenceState | null,
+  expectedUci: string | null,
+): boolean {
+  if (feedback !== 'incorrect' || !expectedUci) {
+    return false;
+  }
+  if (!sequence) {
+    return true;
+  }
+  return sequence.phase === 'answer';
+}
+
+/** True while a miss is unresolved (wrong move, refutation, retry, or answer drag). */
+export function isAwaitingMissResolution(
+  feedback: 'correct' | 'incorrect' | null,
+): boolean {
+  return feedback === 'incorrect';
+}
+
+/** Shared draggable gate for training boards using the miss sequence. */
+export function isTrainingMissDraggable({
+  feedback,
+  sequence,
+  animating,
+  isUserTurn = true,
+  finished = false,
+  correctMoveSquare = null,
+  incorrectMoveSquare = null,
+  refutationMoveSquare = null,
+}: {
+  feedback?: 'correct' | 'incorrect' | null;
+  sequence: MissSequenceState | null;
+  animating: boolean;
+  isUserTurn?: boolean;
+  finished?: boolean;
+  correctMoveSquare?: string | null;
+  incorrectMoveSquare?: string | null;
+  refutationMoveSquare?: string | null;
+}): boolean {
+  if (finished || !isUserTurn) {
+    return false;
+  }
+  if (correctMoveSquare) {
+    return false;
+  }
+  if (incorrectMoveSquare || refutationMoveSquare) {
+    return false;
+  }
+  if (isMissInputLocked(sequence, animating)) {
+    return false;
+  }
+  if (feedback === 'incorrect' && sequence?.phase === 'retry') {
+    return true;
+  }
+  if (feedback === 'incorrect' && sequence?.phase === 'answer') {
+    return true;
+  }
+  if (feedback === 'incorrect' && !sequence) {
+    return true;
+  }
+  return feedback !== 'incorrect';
 }
 
 /**

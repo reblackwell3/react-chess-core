@@ -4,13 +4,36 @@ import type { AnalysisEngineOptions } from '../../engine/types';
 import { uciFromDrop } from '../uciFromDrop';
 import {
   getMissAnimationDuration,
+  isAnswerArrowVisible,
+  isAwaitingMissResolution,
   isMissInputLocked,
+  isTrainingMissDraggable,
   type MissSequencePhase,
 } from './missDisplay';
+import {
+  missRetryPolicyFromAutoShowWrongMoves,
+  normalizeMissRetryPolicy,
+  type MissRetryPolicy,
+} from './missRetryPolicy';
 import { refutationEngineOptions } from './refutation';
 import { useMissSequence, type KnownRefutation } from './useMissSequence';
 
 type MissFeedback = 'correct' | 'incorrect' | null;
+
+export type UseMissBoardOptions = {
+  feedback: MissFeedback;
+  expectedUci: string | null;
+  positionFen: string;
+  answerArrowColor: string;
+  /** @deprecated Prefer {@link missRetryPolicy}. When false, enables blind retry (capped). */
+  autoShowWrongMoves?: boolean;
+  missRetryPolicy?: MissRetryPolicy;
+  snapBackOnWrong?: boolean;
+  engineOptions?: AnalysisEngineOptions;
+  knownRefutation?: KnownRefutation | null;
+  /** Play-time engine depth; instant refutation cache requires this on the wrong line. */
+  setupCacheTargetDepth?: number;
+};
 
 export function useMissBoard({
   feedback,
@@ -18,22 +41,16 @@ export function useMissBoard({
   positionFen,
   answerArrowColor,
   autoShowWrongMoves = true,
+  missRetryPolicy,
   snapBackOnWrong = false,
   engineOptions,
   knownRefutation = null,
   setupCacheTargetDepth,
-}: {
-  feedback: MissFeedback;
-  expectedUci: string | null;
-  positionFen: string;
-  answerArrowColor: string;
-  autoShowWrongMoves?: boolean;
-  snapBackOnWrong?: boolean;
-  engineOptions?: AnalysisEngineOptions;
-  knownRefutation?: KnownRefutation | null;
-  /** Play-time engine depth; instant refutation cache requires this on the wrong line. */
-  setupCacheTargetDepth?: number;
-}) {
+}: UseMissBoardOptions) {
+  const resolvedPolicy = missRetryPolicy
+    ? normalizeMissRetryPolicy(missRetryPolicy)
+    : missRetryPolicyFromAutoShowWrongMoves(autoShowWrongMoves);
+
   const refutationEngine = useMemo(
     () => ({
       ...refutationEngineOptions,
@@ -51,10 +68,11 @@ export function useMissBoard({
     snapBackOnWrong,
     knownRefutation,
     setupCacheTargetDepth,
+    { missRetryPolicy: resolvedPolicy },
   );
 
   const customArrows = useMemo<ChessboardArrow[]>(() => {
-    if (feedback !== 'incorrect') {
+    if (!isAnswerArrowVisible(feedback, missSequence.sequence, expectedUci)) {
       return [];
     }
 
@@ -88,6 +106,12 @@ export function useMissBoard({
   const refutationMoveSquare = display.refutationMoveSquare;
   const animationDuration = getMissAnimationDuration(display.animating);
   const inputLocked = isMissInputLocked(sequence, display.animating);
+  const answerArrowVisible = isAnswerArrowVisible(
+    feedback,
+    sequence,
+    expectedUci,
+  );
+  const awaitingMissResolution = isAwaitingMissResolution(feedback);
 
   const wrapDropHandler = useCallback(
     (
@@ -105,29 +129,73 @@ export function useMissBoard({
       (source: string, target: string, piece: string) => {
         if (enabled && expectedMoveUci) {
           const uci = uciFromDrop(dropFen, source, target, piece);
-          if (uci && uci.toLowerCase() !== expectedMoveUci.toLowerCase()) {
-            missSequence.startSequence(dropFen, uci);
-          } else if (
-            uci &&
-            uci.toLowerCase() === expectedMoveUci.toLowerCase()
-          ) {
-            missSequence.clearSequence();
+          if (uci) {
+            const isExpected =
+              uci.toLowerCase() === expectedMoveUci.toLowerCase();
+            if (isExpected) {
+              missSequence.clearSequence();
+            } else if (
+              answerArrowVisible &&
+              !resolvedPolicy.allowRetryOnIncorrect
+            ) {
+              return false;
+            } else if (sequence?.phase === 'retry') {
+              missSequence.recordWrongAttempt(
+                sequence.setupFen,
+                uci,
+              );
+            } else if (!isExpected) {
+              missSequence.startSequence(dropFen, uci);
+            }
           }
         }
 
         return onDrop(source, target, piece);
       },
     [
+      answerArrowVisible,
       boardPosition,
       expectedUci,
       missSequence.clearSequence,
+      missSequence.recordWrongAttempt,
       missSequence.startSequence,
+      resolvedPolicy.allowRetryOnIncorrect,
+      sequence?.phase,
+      sequence?.setupFen,
+    ],
+  );
+
+  const isDraggable = useCallback(
+    (options: {
+      isUserTurn?: boolean;
+      finished?: boolean;
+      correctMoveSquare?: string | null;
+      fallbackIncorrectSquare?: string | null;
+    } = {}) =>
+      isTrainingMissDraggable({
+        feedback,
+        sequence,
+        animating: display.animating,
+        isUserTurn: options.isUserTurn,
+        finished: options.finished,
+        correctMoveSquare: options.correctMoveSquare ?? null,
+        incorrectMoveSquare:
+          incorrectMoveSquare ?? options.fallbackIncorrectSquare ?? null,
+        refutationMoveSquare,
+      }),
+    [
+      display.animating,
+      feedback,
+      incorrectMoveSquare,
+      refutationMoveSquare,
+      sequence,
     ],
   );
 
   return {
     missSequence,
     refutation: missSequence.refutation,
+    missRetryPolicy: resolvedPolicy,
     customArrows,
     boardPosition,
     boardAnimating: display.animating,
@@ -137,6 +205,9 @@ export function useMissBoard({
     animationDuration,
     inputLocked,
     phase,
+    answerArrowVisible,
+    awaitingMissResolution,
     wrapDropHandler,
+    isDraggable,
   };
 }

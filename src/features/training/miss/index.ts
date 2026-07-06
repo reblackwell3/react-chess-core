@@ -26,12 +26,23 @@ export {
   REFUTATION_RESPONSE_BUDGET_MS,
   getMissAnimationDuration,
   getMissDisplay,
+  isAnswerArrowVisible,
+  isAwaitingMissResolution,
   isMissInputLocked,
+  isTrainingMissDraggable,
   resolveIncorrectMoveSquare,
   type MissDisplay,
   type MissSequencePhase,
   type MissSequenceState,
 } from './missDisplay';
+export {
+  DEFAULT_MAX_MISS_ATTEMPTS,
+  DEFAULT_MISS_RETRY_POLICY,
+  missRetryPolicyFromAutoShowWrongMoves,
+  normalizeMissRetryPolicy,
+  resolvePostMissPhase,
+  type MissRetryPolicy,
+} from './missRetryPolicy';
 export { useMissRefutation, type KnownRefutation } from './useMissRefutation';
 export { useMissSequence, type MissSequenceOptions } from './useMissSequence';
-export { useMissBoard } from './useMissBoard';
+export { useMissBoard, type UseMissBoardOptions } from './useMissBoard';

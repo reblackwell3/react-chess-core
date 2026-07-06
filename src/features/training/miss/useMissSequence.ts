@@ -10,9 +10,15 @@ import {
   type MissSequencePhase,
   type MissSequenceState,
 } from './missDisplay';
+import {
+  normalizeMissRetryPolicy,
+  resolvePostMissPhase,
+  type MissRetryPolicy,
+} from './missRetryPolicy';
 import { useMissRefutation, type KnownRefutation } from './useMissRefutation';
 
 export type { MissSequencePhase, MissDisplay };
+export type { MissRetryPolicy };
 
 type MissSequence = MissSequenceState;
 
@@ -25,6 +31,8 @@ export type MissSequenceOptions = {
   clearAfterRefutation?: boolean;
   /** Min time in wrong phase before refutation (default: animation + pause). */
   wrongHoldMs?: number;
+  /** Retry vs answer-arrow behavior after a miss. */
+  missRetryPolicy?: MissRetryPolicy;
 };
 
 export function useMissSequence(
@@ -38,6 +46,10 @@ export function useMissSequence(
   setupCacheTargetDepth?: number,
   options: MissSequenceOptions = {},
 ) {
+  const missRetryPolicy = normalizeMissRetryPolicy(
+    options.missRetryPolicy,
+    autoShowWrongMoves,
+  );
   const refutationPauseMs =
     options.refutationPauseMs ?? MISS_REFUTATION_PAUSE_MS;
   const clearAfterRefutation = options.clearAfterRefutation === true;
@@ -60,8 +72,25 @@ export function useMissSequence(
       setupFen,
       attemptedUci,
       phase: 'wrong',
+      attemptCount: 1,
     });
   }, []);
+
+  const recordWrongAttempt = useCallback(
+    (setupFen: string, attemptedUci: string) => {
+      setSequence((current) => {
+        const baseSetupFen = current?.setupFen ?? setupFen;
+        const nextCount = (current?.attemptCount ?? 0) + 1;
+        return {
+          setupFen: baseSetupFen,
+          attemptedUci,
+          phase: 'wrong',
+          attemptCount: nextCount,
+        };
+      });
+    },
+    [],
+  );
 
   const clearSequence = useCallback(() => {
     setSequence(null);
@@ -109,9 +138,7 @@ export function useMissSequence(
           ...current,
           phase: refutation.refutationUci
             ? 'refutation'
-            : autoShowWrongMoves
-              ? 'answer'
-              : 'retry',
+            : resolvePostMissPhase(missRetryPolicy, current.attemptCount),
         };
       });
     };
@@ -135,7 +162,7 @@ export function useMissSequence(
     const timer = schedule();
     return () => window.clearTimeout(timer);
   }, [
-    autoShowWrongMoves,
+    missRetryPolicy,
     refutation.loading,
     refutation.refutationUci,
     sequence,
@@ -157,13 +184,13 @@ export function useMissSequence(
         }
         return {
           ...current,
-          phase: autoShowWrongMoves ? 'answer' : 'retry',
+          phase: resolvePostMissPhase(missRetryPolicy, current.attemptCount),
         };
       });
     }, refutationPauseMs);
 
     return () => window.clearTimeout(delay);
-  }, [autoShowWrongMoves, clearAfterRefutation, refutationPauseMs, sequence]);
+  }, [clearAfterRefutation, missRetryPolicy, refutationPauseMs, sequence]);
 
   const display = useMemo(
     (): MissDisplay =>
@@ -185,7 +212,9 @@ export function useMissSequence(
     sequence,
     refutation,
     display,
+    missRetryPolicy,
     startSequence,
+    recordWrongAttempt,
     clearSequence,
   };
 }
