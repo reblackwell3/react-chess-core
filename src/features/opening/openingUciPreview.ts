@@ -1,11 +1,19 @@
 import { Chess } from 'chess.js';
 
 const applyUci = (chess: Chess, uci: string): boolean => {
+  if (!uci || uci.length < 4) {
+    return false;
+  }
+
   const from = uci.slice(0, 2);
   const to = uci.slice(2, 4);
   const promotion = uci.length > 4 ? uci[4] : undefined;
-  const move = chess.move({ from, to, promotion });
-  return Boolean(move);
+
+  try {
+    return chess.move({ from, to, promotion }) !== null;
+  } catch {
+    return false;
+  }
 };
 
 export const parsePreviewMovesUci = (movesUci?: string): string[] =>
