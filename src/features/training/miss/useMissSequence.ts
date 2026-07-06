@@ -23,6 +23,8 @@ export type MissSequenceOptions = {
   refutationPauseMs?: number;
   /** End the sequence after refutation instead of showing the answer arrow. */
   clearAfterRefutation?: boolean;
+  /** Min time in wrong phase before refutation (default: animation + pause). */
+  wrongHoldMs?: number;
 };
 
 export function useMissSequence(
@@ -39,6 +41,8 @@ export function useMissSequence(
   const refutationPauseMs =
     options.refutationPauseMs ?? MISS_REFUTATION_PAUSE_MS;
   const clearAfterRefutation = options.clearAfterRefutation === true;
+  const wrongHoldMs =
+    options.wrongHoldMs ?? MISS_MOVE_ANIMATION_MS + MISS_WRONG_PAUSE_MS;
   const [sequence, setSequence] = useState<MissSequence | null>(null);
 
   const refutation = useMissRefutation(
@@ -94,8 +98,7 @@ export function useMissSequence(
 
     const enteredAt = wrongPhaseEnteredAtRef.current ?? Date.now();
     const deadline = enteredAt + REFUTATION_RESPONSE_BUDGET_MS;
-    const earliestShow =
-      enteredAt + MISS_MOVE_ANIMATION_MS + MISS_WRONG_PAUSE_MS;
+    const earliestShow = enteredAt + wrongHoldMs;
 
     const advance = () => {
       setSequence((current) => {
@@ -135,6 +138,7 @@ export function useMissSequence(
     refutation.loading,
     refutation.refutationUci,
     sequence,
+    wrongHoldMs,
   ]);
 
   useEffect(() => {

@@ -48,6 +48,11 @@ export interface HighlightChessboardProps {
   clickToMove?: boolean;
   /** Show selected-square / move-target overlays for click-to-move. Defaults to true. */
   clickToMoveHighlight?: boolean;
+  /** Colored move-quality dots on destination squares (bottom-right of square). */
+  moveQualitySquareStyles?: Record<
+    string,
+    { bgcolor: string }
+  >;
   [key: string]: any;
 }
 
@@ -61,6 +66,7 @@ export const HighlightChessboard = ({
   lineContext,
   clickToMove,
   clickToMoveHighlight = true,
+  moveQualitySquareStyles,
   customSquareStyles: extraSquareStyles,
   customArrows,
   customBoardStyle,
@@ -115,8 +121,14 @@ export const HighlightChessboard = ({
         correctMoveSquare,
         incorrectMoveSquare,
         refutationMoveSquare,
+        moveQualitySquareStyles,
       }),
-    [correctMoveSquare, incorrectMoveSquare, refutationMoveSquare],
+    [
+      correctMoveSquare,
+      incorrectMoveSquare,
+      refutationMoveSquare,
+      moveQualitySquareStyles,
+    ],
   );
 
   const resolvedLastMoveUci = useMemo(
