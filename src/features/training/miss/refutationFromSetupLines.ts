@@ -18,7 +18,7 @@ export const SETUP_REFUTATION_MIN_DEPTH = 4;
 export type SetupRefutationCacheOptions = {
   /** Wrong-move multipv line must reach at least this depth. */
   targetDepth?: number;
-  /** When true, only use cache after play-time search completes. */
+  /** @deprecated Ignored — wrong-line depth is the readiness gate, not engine idle. */
   requireIdle?: boolean;
 };
 
@@ -74,13 +74,8 @@ export function tryRefutationFromSetupEvaluation(
 ): SetupRefutationResult | null {
   const targetDepth =
     cacheOptions.targetDepth ?? DEFAULT_SETUP_REFUTATION_TARGET_DEPTH;
-  const requireIdle = cacheOptions.requireIdle ?? true;
 
   if (!evaluationUsable(evaluation)) {
-    return null;
-  }
-
-  if (requireIdle && evaluation.status !== 'idle') {
     return null;
   }
 

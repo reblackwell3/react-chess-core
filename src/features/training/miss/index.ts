@@ -1,6 +1,7 @@
 export {
   REFUTATION_EVAL_GAP_CP,
   REFUTATION_EVAL_GAP_PAWNS,
+  REFUTATION_FALLBACK_MOVETIME_MS,
   fenAfterUci,
   lineEvalCpForGap,
   refutationEngineOptions,
@@ -20,7 +21,6 @@ export {
 } from './refutationFromSetupLines';
 export {
   MISS_MOVE_ANIMATION_MS,
-  MISS_REFUTATION_MAX_WAIT_MS,
   MISS_REFUTATION_PAUSE_MS,
   MISS_WRONG_PAUSE_MS,
   REFUTATION_RESPONSE_BUDGET_MS,

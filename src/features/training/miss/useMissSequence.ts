@@ -123,15 +123,17 @@ export function useMissSequence(
     }
 
     const enteredAt = wrongPhaseEnteredAtRef.current ?? Date.now();
-    const deadline = enteredAt + REFUTATION_RESPONSE_BUDGET_MS;
     const earliestShow = enteredAt + wrongHoldMs;
+    const deadline = enteredAt + REFUTATION_RESPONSE_BUDGET_MS;
 
-    const advance = () => {
+    const advanceWhenReady = () => {
       setSequence((current) => {
         if (!current || current.phase !== 'wrong') {
           return current;
         }
-        if (refutation.loading && Date.now() < deadline) {
+        const now = Date.now();
+        // Prefer fallback Stockfish movetime, but cap total wait at REFUTATION_RESPONSE_BUDGET_MS.
+        if (refutation.loading && now < deadline) {
           return current;
         }
         return {
@@ -143,23 +145,15 @@ export function useMissSequence(
       });
     };
 
-    const schedule = () => {
-      const now = Date.now();
-      const hasRefutation =
-        Boolean(refutation.refutationUci) && !refutation.loading;
+    const now = Date.now();
 
-      if (hasRefutation) {
-        return window.setTimeout(advance, Math.max(0, earliestShow - now));
-      }
+    if (now >= earliestShow && (!refutation.loading || now >= deadline)) {
+      advanceWhenReady();
+      return undefined;
+    }
 
-      if (refutation.loading) {
-        return window.setTimeout(advance, Math.max(0, deadline - now));
-      }
-
-      return window.setTimeout(advance, Math.max(0, earliestShow - now));
-    };
-
-    const timer = schedule();
+    const nextAt = now < earliestShow ? earliestShow : deadline;
+    const timer = window.setTimeout(advanceWhenReady, Math.max(0, nextAt - now));
     return () => window.clearTimeout(timer);
   }, [
     missRetryPolicy,
