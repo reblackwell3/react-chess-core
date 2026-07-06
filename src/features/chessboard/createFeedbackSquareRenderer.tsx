@@ -1,17 +1,9 @@
-import type { CSSProperties, FC } from 'react';
+import type { FC } from 'react';
 import type { CustomSquareProps } from 'react-chessboard/dist/chessboard/types';
 import { CorrectMoveCheckBadge } from './CorrectMoveCheckBadge';
 import { IncorrectMoveXBadge } from './IncorrectMoveXBadge';
 import { MoveQualityDotBadge } from './MoveQualityDotBadge';
 import { RefutationMoveBadge } from './RefutationMoveBadge';
-
-const overlayStyle: CSSProperties = {
-  position: 'absolute',
-  inset: 0,
-  pointerEvents: 'none',
-  zIndex: 20,
-  overflow: 'visible',
-};
 
 export type MoveQualitySquareStyle = {
   bgcolor: string;
@@ -58,21 +50,9 @@ export function createFeedbackSquareRenderer({
         square !== refutationMoveSquare ? (
           <MoveQualityDotBadge bgcolor={moveQualityStyle.bgcolor} />
         ) : null}
-        {square === correctMoveSquare ? (
-          <div style={overlayStyle}>
-            <CorrectMoveCheckBadge />
-          </div>
-        ) : null}
-        {square === incorrectMoveSquare ? (
-          <div style={overlayStyle}>
-            <IncorrectMoveXBadge />
-          </div>
-        ) : null}
-        {square === refutationMoveSquare ? (
-          <div style={overlayStyle}>
-            <RefutationMoveBadge />
-          </div>
-        ) : null}
+        {square === correctMoveSquare ? <CorrectMoveCheckBadge /> : null}
+        {square === incorrectMoveSquare ? <IncorrectMoveXBadge /> : null}
+        {square === refutationMoveSquare ? <RefutationMoveBadge /> : null}
       </div>
     );
   };
