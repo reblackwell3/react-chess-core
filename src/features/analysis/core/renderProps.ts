@@ -15,6 +15,9 @@ export type EngineEvaluationRenderProps = {
   fen: string;
   evaluation: EngineEvaluation;
   theme: 'light' | 'dark';
+  /** When set, highlights the selected engine line row. */
+  selectedPvMultipv?: number | null;
+  onSelectPvLine?: (pv: string[], depth: number, multipv: number) => void;
 };
 
 export type AnalysisSidebarRenderProps = {
