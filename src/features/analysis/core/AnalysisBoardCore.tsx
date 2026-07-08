@@ -1,5 +1,8 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { Chess } from 'chess.js';
 import { usePositionKeyboardNav } from '../../navigation';
+import { applyUciMove } from '../analysisUtils';
+import { ANALYSIS_PV_STEP_MS } from '../analysisPvStepMs';
 import { AnalysisChessboardView } from './AnalysisChessboardView';
 import {
   AnalysisContainerRenderProps,
@@ -74,7 +77,96 @@ export const AnalysisBoardCoreView = ({
   renderSidebar,
   renderEngineEvaluation,
 }: AnalysisBoardCoreViewProps) => {
-  const { ply, maxPly, onSelectPly } = model;
+  const { ply, maxPly, onSelectPly, fen: navFen } = model;
+  const [pvPreview, setPvPreview] = useState<{
+    fen: string;
+    lastMoveUci: string | null;
+    multipv: number;
+  } | null>(null);
+  const pvAnimRef = useRef<{
+    cancelled: boolean;
+    timeoutIds: ReturnType<typeof setTimeout>[];
+  }>({ cancelled: false, timeoutIds: [] });
+
+  const clearPvAnimation = useCallback(() => {
+    const anim = pvAnimRef.current;
+    anim.cancelled = true;
+    anim.timeoutIds.forEach(clearTimeout);
+    pvAnimRef.current = { cancelled: false, timeoutIds: [] };
+  }, []);
+
+  useEffect(() => () => clearPvAnimation(), [clearPvAnimation]);
+
+  const onSelectPvLine = useCallback(
+    (pv: string[], _depth: number, multipv: number) => {
+      if (pv.length === 0) {
+        return;
+      }
+
+      clearPvAnimation();
+      const anim = {
+        cancelled: false,
+        timeoutIds: [] as ReturnType<typeof setTimeout>[],
+      };
+      pvAnimRef.current = anim;
+
+      const chess = new Chess(navFen);
+      let lastUci: string | null = null;
+      let plyIndex = 0;
+
+      const step = () => {
+        if (anim.cancelled || plyIndex >= pv.length) {
+          return;
+        }
+
+        const uci = pv[plyIndex]!;
+        if (!applyUciMove(chess, uci)) {
+          return;
+        }
+
+        lastUci = uci;
+        plyIndex += 1;
+        setPvPreview({ fen: chess.fen(), lastMoveUci: lastUci, multipv });
+
+        if (plyIndex < pv.length) {
+          const id = setTimeout(step, ANALYSIS_PV_STEP_MS);
+          anim.timeoutIds.push(id);
+        }
+      };
+
+      step();
+    },
+    [clearPvAnimation, navFen],
+  );
+
+  const displayModel =
+    pvPreview !== null
+      ? {
+          ...model,
+          fen: pvPreview.fen,
+          lastMoveUci: pvPreview.lastMoveUci,
+          onSelectPly: (nextPly: number) => {
+            clearPvAnimation();
+            setPvPreview(null);
+            onSelectPly(nextPly);
+          },
+          onSelectHistoryRow: (row: Parameters<typeof model.onSelectHistoryRow>[0]) => {
+            clearPvAnimation();
+            setPvPreview(null);
+            model.onSelectHistoryRow(row);
+          },
+          onPieceDrop: (
+            sourceSquare: string,
+            targetSquare: string,
+            piece: string,
+          ) => {
+            clearPvAnimation();
+            setPvPreview(null);
+            return model.onPieceDrop(sourceSquare, targetSquare, piece);
+          },
+        }
+      : model;
+
   const canPrev = ply > 0;
   const canNext = ply < maxPly;
   const goFirst = useCallback(() => onSelectPly(0), [onSelectPly]);
@@ -92,12 +184,14 @@ export const AnalysisBoardCoreView = ({
     onLast: goLast,
   });
 
-  const board = <AnalysisChessboardView model={model} />;
+  const board = <AnalysisChessboardView model={displayModel} />;
   const engineEvaluationPanel = model.engineEnabled
     ? renderEngineEvaluation({
-        fen: model.fen,
+        fen: navFen,
         evaluation: model.engineEvaluation,
         theme: model.theme,
+        selectedPvMultipv: pvPreview?.multipv ?? null,
+        onSelectPvLine,
       })
     : null;
 
