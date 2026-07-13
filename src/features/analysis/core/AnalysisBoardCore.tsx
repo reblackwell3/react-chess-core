@@ -139,29 +139,41 @@ export const AnalysisBoardCoreView = ({
     [clearPvAnimation, navFen],
   );
 
+  const dismissPvPreview = useCallback(() => {
+    clearPvAnimation();
+    setPvPreview(null);
+  }, [clearPvAnimation]);
+
+  const handleSelectPly = useCallback(
+    (nextPly: number) => {
+      dismissPvPreview();
+      onSelectPly(nextPly);
+    },
+    [dismissPvPreview, onSelectPly],
+  );
+
+  const handleSelectHistoryRow = useCallback(
+    (row: Parameters<typeof model.onSelectHistoryRow>[0]) => {
+      dismissPvPreview();
+      model.onSelectHistoryRow(row);
+    },
+    [dismissPvPreview, model.onSelectHistoryRow],
+  );
+
   const displayModel =
     pvPreview !== null
       ? {
           ...model,
           fen: pvPreview.fen,
           lastMoveUci: pvPreview.lastMoveUci,
-          onSelectPly: (nextPly: number) => {
-            clearPvAnimation();
-            setPvPreview(null);
-            onSelectPly(nextPly);
-          },
-          onSelectHistoryRow: (row: Parameters<typeof model.onSelectHistoryRow>[0]) => {
-            clearPvAnimation();
-            setPvPreview(null);
-            model.onSelectHistoryRow(row);
-          },
+          onSelectPly: handleSelectPly,
+          onSelectHistoryRow: handleSelectHistoryRow,
           onPieceDrop: (
             sourceSquare: string,
             targetSquare: string,
             piece: string,
           ) => {
-            clearPvAnimation();
-            setPvPreview(null);
+            dismissPvPreview();
             return model.onPieceDrop(sourceSquare, targetSquare, piece);
           },
         }
@@ -169,10 +181,19 @@ export const AnalysisBoardCoreView = ({
 
   const canPrev = ply > 0;
   const canNext = ply < maxPly;
-  const goFirst = useCallback(() => onSelectPly(0), [onSelectPly]);
-  const goPrev = useCallback(() => onSelectPly(ply - 1), [onSelectPly, ply]);
-  const goNext = useCallback(() => onSelectPly(ply + 1), [onSelectPly, ply]);
-  const goLast = useCallback(() => onSelectPly(maxPly), [maxPly, onSelectPly]);
+  const goFirst = useCallback(() => handleSelectPly(0), [handleSelectPly]);
+  const goPrev = useCallback(
+    () => handleSelectPly(ply - 1),
+    [handleSelectPly, ply],
+  );
+  const goNext = useCallback(
+    () => handleSelectPly(ply + 1),
+    [handleSelectPly, ply],
+  );
+  const goLast = useCallback(
+    () => handleSelectPly(maxPly),
+    [maxPly, handleSelectPly],
+  );
 
   usePositionKeyboardNav({
     enabled: keyboardNav,
@@ -199,10 +220,10 @@ export const AnalysisBoardCoreView = ({
     moves: model.solutionSans,
     historyRows: model.historyRows,
     isHistoryRowSelected: model.isHistoryRowSelected,
-    onSelectHistoryRow: model.onSelectHistoryRow,
+    onSelectHistoryRow: handleSelectHistoryRow,
     ply: model.ply,
     maxPly: model.maxPly,
-    onSelectPly: model.onSelectPly,
+    onSelectPly: handleSelectPly,
     theme: model.theme,
     engineEvaluationPanel,
   });
