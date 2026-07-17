@@ -16,7 +16,12 @@ import {
   type MissRetryPolicy,
 } from './missRetryPolicy';
 import { refutationEngineOptions } from './refutation';
-import { useMissSequence, type KnownRefutation } from './useMissSequence';
+import {
+  useMissSequence,
+  type KnownRefutation,
+  type OnRefutationResolved,
+  type ResolveKnownRefutation,
+} from './useMissSequence';
 
 type MissFeedback = 'correct' | 'incorrect' | null;
 
@@ -33,6 +38,10 @@ export type UseMissBoardOptions = {
   knownRefutation?: KnownRefutation | null;
   /** Play-time engine depth; instant refutation cache requires this on the wrong line. */
   setupCacheTargetDepth?: number;
+  /** Fires when the engine (not a known refutation) resolves a refutation. */
+  onRefutationResolved?: OnRefutationResolved;
+  /** Async lookup of a stored refutation (e.g. backend cache). */
+  resolveKnownRefutation?: ResolveKnownRefutation;
 };
 
 export function useMissBoard({
@@ -46,6 +55,8 @@ export function useMissBoard({
   engineOptions,
   knownRefutation = null,
   setupCacheTargetDepth,
+  onRefutationResolved,
+  resolveKnownRefutation,
 }: UseMissBoardOptions) {
   const resolvedPolicy = useMemo(
     () =>
@@ -76,7 +87,11 @@ export function useMissBoard({
     snapBackOnWrong,
     knownRefutation,
     setupCacheTargetDepth,
-    { missRetryPolicy: resolvedPolicy },
+    {
+      missRetryPolicy: resolvedPolicy,
+      onRefutationResolved,
+      resolveKnownRefutation,
+    },
   );
 
   const customArrows = useMemo<ChessboardArrow[]>(() => {

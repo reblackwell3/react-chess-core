@@ -43,6 +43,12 @@ export {
   resolvePostMissPhase,
   type MissRetryPolicy,
 } from './missRetryPolicy';
-export { useMissRefutation, type KnownRefutation } from './useMissRefutation';
+export {
+  useMissRefutation,
+  type KnownRefutation,
+  type OnRefutationResolved,
+  type ResolveKnownRefutation,
+  type ResolvedRefutation,
+} from './useMissRefutation';
 export { useMissSequence, type MissSequenceOptions } from './useMissSequence';
 export { useMissBoard, type UseMissBoardOptions } from './useMissBoard';

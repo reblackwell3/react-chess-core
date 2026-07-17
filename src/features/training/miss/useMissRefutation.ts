@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { uciPvToSan } from '../../engine/formatEvaluation';
 import { usePlayTimeEngineEvaluation } from '../../engine/PlayTimeEngineContext';
 import { useAnalysisEngine } from '../../engine/useAnalysisEngine';
@@ -24,6 +24,26 @@ export type KnownRefutation = {
   onlyForAttemptedUci?: string;
 };
 
+/** Engine-derived refutation, reported so hosts can persist it. */
+export type ResolvedRefutation = {
+  setupFen: string;
+  wrongUci: string;
+  refutationUci: string;
+  refutationSan: string | null;
+  depth: number | null;
+};
+
+export type OnRefutationResolved = (resolved: ResolvedRefutation) => void;
+
+/**
+ * Async lookup of a previously stored refutation (e.g. a backend cache).
+ * Runs when a miss starts and the setup-line cache does not hit.
+ */
+export type ResolveKnownRefutation = (
+  setupFen: string,
+  wrongUci: string,
+) => Promise<KnownRefutation | null>;
+
 export function useMissRefutation(
   setupFen: string | null,
   attemptedUci: string | null,
@@ -32,6 +52,8 @@ export function useMissRefutation(
   engineOptions: AnalysisEngineOptions,
   knownRefutation: KnownRefutation | null = null,
   setupCacheTargetDepth: number = DEFAULT_SETUP_REFUTATION_TARGET_DEPTH,
+  onRefutationResolved?: OnRefutationResolved,
+  resolveKnownRefutation?: ResolveKnownRefutation,
 ): RefutationResult {
   const playTime = usePlayTimeEngineEvaluation();
 
@@ -68,6 +90,64 @@ export function useMissRefutation(
   ]);
 
   const cacheHit = cacheResult != null;
+
+  const lookupKey =
+    setupFen && attemptedUci ? `${setupFen}:${attemptedUci}` : null;
+  const [fetchedKnown, setFetchedKnown] = useState<{
+    key: string;
+    value: KnownRefutation | null;
+  } | null>(null);
+
+  useEffect(() => {
+    if (
+      !resolveKnownRefutation ||
+      !enabled ||
+      !setupFen ||
+      !attemptedUci ||
+      !lookupKey ||
+      cacheHit ||
+      knownRefutation?.uci
+    ) {
+      return undefined;
+    }
+    if (fetchedKnown?.key === lookupKey) {
+      return undefined;
+    }
+    let cancelled = false;
+    resolveKnownRefutation(setupFen, attemptedUci)
+      .then((value) => {
+        if (!cancelled) {
+          setFetchedKnown({ key: lookupKey, value });
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setFetchedKnown({ key: lookupKey, value: null });
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    attemptedUci,
+    cacheHit,
+    enabled,
+    fetchedKnown,
+    knownRefutation?.uci,
+    lookupKey,
+    resolveKnownRefutation,
+    setupFen,
+  ]);
+
+  const effectiveKnown = useMemo((): KnownRefutation | null => {
+    if (knownRefutation) {
+      return knownRefutation;
+    }
+    if (lookupKey && fetchedKnown?.key === lookupKey && fetchedKnown.value) {
+      return fetchedKnown.value;
+    }
+    return null;
+  }, [fetchedKnown, knownRefutation, lookupKey]);
 
   const fenAfterWrong = useMemo(() => {
     if (cacheResult) {
@@ -138,14 +218,14 @@ export function useMissRefutation(
     runWrongEngine,
   ]);
 
-  return useMemo(() => {
+  const result = useMemo(() => {
     if (
       enabled &&
-      knownRefutation?.uci &&
+      effectiveKnown?.uci &&
       setupFen &&
       attemptedUci
     ) {
-      const onlyFor = knownRefutation.onlyForAttemptedUci;
+      const onlyFor = effectiveKnown.onlyForAttemptedUci;
       if (
         onlyFor &&
         attemptedUci.toLowerCase() !== onlyFor.toLowerCase()
@@ -155,12 +235,12 @@ export function useMissRefutation(
         const fenAfterWrongMove = fenAfterUci(setupFen, attemptedUci);
         if (fenAfterWrongMove) {
           const refutationSan =
-            knownRefutation.san ??
-            uciPvToSan(fenAfterWrongMove, [knownRefutation.uci])[0] ??
-            knownRefutation.uci;
+            effectiveKnown.san ??
+            uciPvToSan(fenAfterWrongMove, [effectiveKnown.uci])[0] ??
+            effectiveKnown.uci;
           return {
             fenAfterWrong: fenAfterWrongMove,
-            refutationUci: knownRefutation.uci,
+            refutationUci: effectiveKnown.uci,
             refutationSan,
             refutationLine: null,
             loading: false,
@@ -241,10 +321,65 @@ export function useMissRefutation(
     expectedUci,
     fenAfterCorrect,
     fenAfterWrong,
-    knownRefutation,
+    effectiveKnown,
     setupEvaluation,
     setupFen,
     enabled,
     wrongEvaluation,
   ]);
+
+  const knownApplied = Boolean(
+    enabled &&
+      effectiveKnown?.uci &&
+      setupFen &&
+      attemptedUci &&
+      (!effectiveKnown.onlyForAttemptedUci ||
+        attemptedUci.toLowerCase() ===
+          effectiveKnown.onlyForAttemptedUci.toLowerCase()),
+  );
+
+  const reportedKeyRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (
+      !onRefutationResolved ||
+      !enabled ||
+      knownApplied ||
+      !setupFen ||
+      !attemptedUci ||
+      result.loading ||
+      !result.refutationUci
+    ) {
+      return;
+    }
+    const key = `${setupFen}:${attemptedUci}`;
+    if (reportedKeyRef.current === key) {
+      return;
+    }
+    reportedKeyRef.current = key;
+    const depth = cacheResult
+      ? findSetupLineByFirstMove(
+          setupEvaluation?.lines ?? [],
+          attemptedUci,
+        )?.depth ?? null
+      : wrongEvaluation.lines[0]?.depth ?? null;
+    onRefutationResolved({
+      setupFen,
+      wrongUci: attemptedUci,
+      refutationUci: result.refutationUci,
+      refutationSan: result.refutationSan,
+      depth,
+    });
+  }, [
+    attemptedUci,
+    cacheResult,
+    enabled,
+    knownApplied,
+    onRefutationResolved,
+    result,
+    setupEvaluation,
+    setupFen,
+    wrongEvaluation,
+  ]);
+
+  return result;
 }

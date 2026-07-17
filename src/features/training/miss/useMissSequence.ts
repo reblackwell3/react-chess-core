@@ -15,14 +15,25 @@ import {
   resolvePostMissPhase,
   type MissRetryPolicy,
 } from './missRetryPolicy';
-import { useMissRefutation, type KnownRefutation } from './useMissRefutation';
+import {
+  useMissRefutation,
+  type KnownRefutation,
+  type OnRefutationResolved,
+  type ResolveKnownRefutation,
+  type ResolvedRefutation,
+} from './useMissRefutation';
 
 export type { MissSequencePhase, MissDisplay };
 export type { MissRetryPolicy };
 
 type MissSequence = MissSequenceState;
 
-export type { KnownRefutation };
+export type {
+  KnownRefutation,
+  OnRefutationResolved,
+  ResolveKnownRefutation,
+  ResolvedRefutation,
+};
 
 export type MissSequenceOptions = {
   /** How long to hold the refutation on the board before advancing. */
@@ -33,6 +44,10 @@ export type MissSequenceOptions = {
   wrongHoldMs?: number;
   /** Retry vs answer-arrow behavior after a miss. */
   missRetryPolicy?: MissRetryPolicy;
+  /** Fires when the engine (not a known refutation) resolves a refutation. */
+  onRefutationResolved?: OnRefutationResolved;
+  /** Async lookup of a stored refutation (e.g. backend cache). */
+  resolveKnownRefutation?: ResolveKnownRefutation;
 };
 
 export function useMissSequence(
@@ -71,6 +86,8 @@ export function useMissSequence(
     engineOptions,
     knownRefutation,
     setupCacheTargetDepth,
+    options.onRefutationResolved,
+    options.resolveKnownRefutation,
   );
 
   const startSequence = useCallback((setupFen: string, attemptedUci: string) => {

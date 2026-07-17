@@ -6,5 +6,6 @@ export * from './StockfishBrowserEngine';
 export * from './isAnalyzableFen';
 export * from './AnalysisEngineContext';
 export * from './PlayTimeEngineContext';
+export * from './usePlayTimeSeed';
 export * from './useAnalysisEngine';
 export * from './positionEval';
