@@ -36,6 +36,8 @@ export type {
 };
 
 export type MissSequenceOptions = {
+  /** Max wall-clock wait for a refutation after a wrong move. */
+  refutationBudgetMs?: number;
   /** How long to hold the refutation on the board before advancing. */
   refutationPauseMs?: number;
   /** End the sequence after refutation instead of showing the answer arrow. */
@@ -71,6 +73,8 @@ export function useMissSequence(
   );
   const allowRetryOnIncorrect = missRetryPolicy.allowRetryOnIncorrect;
   const maxMissAttempts = missRetryPolicy.maxMissAttempts;
+  const refutationBudgetMs =
+    options.refutationBudgetMs ?? REFUTATION_RESPONSE_BUDGET_MS;
   const refutationPauseMs =
     options.refutationPauseMs ?? MISS_REFUTATION_PAUSE_MS;
   const clearAfterRefutation = options.clearAfterRefutation === true;
@@ -159,7 +163,7 @@ export function useMissSequence(
 
     const enteredAt = wrongPhaseEnteredAtRef.current ?? Date.now();
     const earliestShow = enteredAt + wrongHoldMs;
-    const deadline = enteredAt + REFUTATION_RESPONSE_BUDGET_MS;
+    const deadline = enteredAt + refutationBudgetMs;
 
     const advanceWhenReady = () => {
       const { refutationUci, loading } = refutationRef.current;
@@ -168,7 +172,7 @@ export function useMissSequence(
           return current;
         }
         const now = Date.now();
-        // Prefer fallback Stockfish movetime, but cap total wait at REFUTATION_RESPONSE_BUDGET_MS.
+        // Prefer fallback Stockfish movetime, but cap total wait at the configured budget.
         if (loading && now < deadline) {
           return current;
         }
@@ -200,6 +204,7 @@ export function useMissSequence(
   }, [
     refutation.loading,
     refutation.refutationUci,
+    refutationBudgetMs,
     sequenceKey,
     sequencePhase,
     wrongHoldMs,
