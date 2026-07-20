@@ -36,8 +36,10 @@ export type UseMissBoardOptions = {
   snapBackOnWrong?: boolean;
   engineOptions?: AnalysisEngineOptions;
   knownRefutation?: KnownRefutation | null;
-  /** Play-time engine depth; instant refutation cache requires this on the wrong line. */
+  /** @deprecated Partial play-time lines are accepted without a depth gate. */
   setupCacheTargetDepth?: number;
+  /** Max wall-clock wait for a refutation after a wrong move. */
+  refutationBudgetMs?: number;
   /** Fires when the engine (not a known refutation) resolves a refutation. */
   onRefutationResolved?: OnRefutationResolved;
   /** Async lookup of a stored refutation (e.g. backend cache). */
@@ -55,6 +57,7 @@ export function useMissBoard({
   engineOptions,
   knownRefutation = null,
   setupCacheTargetDepth,
+  refutationBudgetMs,
   onRefutationResolved,
   resolveKnownRefutation,
 }: UseMissBoardOptions) {
@@ -88,6 +91,7 @@ export function useMissBoard({
     knownRefutation,
     setupCacheTargetDepth,
     {
+      refutationBudgetMs,
       missRetryPolicy: resolvedPolicy,
       onRefutationResolved,
       resolveKnownRefutation,

@@ -15,6 +15,7 @@ import {
   resolvePostMissPhase,
   type MissRetryPolicy,
 } from './missRetryPolicy';
+import { missDiag, missDiagStart } from './missDiag';
 import {
   useMissRefutation,
   type KnownRefutation,
@@ -36,6 +37,8 @@ export type {
 };
 
 export type MissSequenceOptions = {
+  /** Max wall-clock wait for a refutation after a wrong move. */
+  refutationBudgetMs?: number;
   /** How long to hold the refutation on the board before advancing. */
   refutationPauseMs?: number;
   /** End the sequence after refutation instead of showing the answer arrow. */
@@ -71,6 +74,8 @@ export function useMissSequence(
   );
   const allowRetryOnIncorrect = missRetryPolicy.allowRetryOnIncorrect;
   const maxMissAttempts = missRetryPolicy.maxMissAttempts;
+  const refutationBudgetMs =
+    options.refutationBudgetMs ?? REFUTATION_RESPONSE_BUDGET_MS;
   const refutationPauseMs =
     options.refutationPauseMs ?? MISS_REFUTATION_PAUSE_MS;
   const clearAfterRefutation = options.clearAfterRefutation === true;
@@ -91,19 +96,34 @@ export function useMissSequence(
   );
 
   const startSequence = useCallback((setupFen: string, attemptedUci: string) => {
+    missDiagStart('miss:start', {
+      setupFen,
+      attemptedUci,
+      expectedUci,
+      refutationBudgetMs,
+      wrongHoldMs,
+    });
     setSequence({
       setupFen,
       attemptedUci,
       phase: 'wrong',
       attemptCount: 1,
     });
-  }, []);
+  }, [expectedUci, refutationBudgetMs, wrongHoldMs]);
 
   const recordWrongAttempt = useCallback(
     (setupFen: string, attemptedUci: string) => {
       setSequence((current) => {
         const baseSetupFen = current?.setupFen ?? setupFen;
         const nextCount = (current?.attemptCount ?? 0) + 1;
+        missDiagStart('miss:start', {
+          setupFen: baseSetupFen,
+          attemptedUci,
+          expectedUci,
+          attemptCount: nextCount,
+          refutationBudgetMs,
+          wrongHoldMs,
+        });
         return {
           setupFen: baseSetupFen,
           attemptedUci,
@@ -112,7 +132,7 @@ export function useMissSequence(
         };
       });
     },
-    [],
+    [expectedUci, refutationBudgetMs, wrongHoldMs],
   );
 
   const clearSequence = useCallback(() => {
@@ -138,19 +158,30 @@ export function useMissSequence(
     ? `${sequence.setupFen}:${sequence.attemptedUci}:${sequence.attemptCount}`
     : null;
 
+  const prevSequencePhaseRef = useRef<MissSequencePhase | null>(null);
   useEffect(() => {
     if (sequencePhase === 'wrong') {
       if (wrongPhaseEnteredAtRef.current === null) {
         wrongPhaseEnteredAtRef.current = Date.now();
       }
       refutationPhaseEnteredAtRef.current = null;
-      return;
+    } else {
+      wrongPhaseEnteredAtRef.current = null;
+      if (sequencePhase !== 'refutation') {
+        refutationPhaseEnteredAtRef.current = null;
+      }
     }
-    wrongPhaseEnteredAtRef.current = null;
-    if (sequencePhase !== 'refutation') {
-      refutationPhaseEnteredAtRef.current = null;
+    if (sequencePhase !== prevSequencePhaseRef.current) {
+      if (sequencePhase) {
+        missDiag(`sequence:${sequencePhase}`, {
+          attemptCount: sequence?.attemptCount ?? null,
+          refutationUci: refutationRef.current.refutationUci,
+          loading: refutationRef.current.loading,
+        });
+      }
+      prevSequencePhaseRef.current = sequencePhase;
     }
-  }, [sequencePhase]);
+  }, [sequence?.attemptCount, sequencePhase]);
 
   useEffect(() => {
     if (sequencePhase !== 'wrong' || !sequenceKey) {
@@ -159,17 +190,53 @@ export function useMissSequence(
 
     const enteredAt = wrongPhaseEnteredAtRef.current ?? Date.now();
     const earliestShow = enteredAt + wrongHoldMs;
-    const deadline = enteredAt + REFUTATION_RESPONSE_BUDGET_MS;
+    const deadline = enteredAt + refutationBudgetMs;
+    let timer: number | undefined;
 
-    const advanceWhenReady = () => {
+    const advanceWhenReady = (
+      source: 'immediate' | 'timer',
+      scheduledAtMs?: number,
+    ) => {
       const { refutationUci, loading } = refutationRef.current;
+      const now = Date.now();
+      missDiag('timer:fired', {
+        source,
+        loading,
+        refutationUci,
+        pastDeadline: now >= deadline,
+        pastEarliestShow: now >= earliestShow,
+        timerLagMs:
+          scheduledAtMs == null
+            ? null
+            : Math.round(performance.now() - scheduledAtMs),
+      });
+
+      // Earliest-show wake while still loading: keep waiting until the hard deadline.
+      // Without this reschedule, a stuck engine `loading` status never wakes again.
+      if (loading && now < deadline) {
+        const remainingMs = Math.max(0, deadline - now);
+        const nextScheduledAt = performance.now();
+        missDiag('timer:held', {
+          reason: 'still-loading-before-deadline',
+          msUntilDeadline: remainingMs,
+        });
+        missDiag('timer:scheduled', {
+          delayMs: remainingMs,
+          nextAt: 'deadline',
+          reason: 'after-hold',
+          loading,
+          refutationBudgetMs,
+          wrongHoldMs,
+        });
+        timer = window.setTimeout(
+          () => advanceWhenReady('timer', nextScheduledAt + remainingMs),
+          remainingMs,
+        );
+        return;
+      }
+
       setSequence((current) => {
         if (!current || current.phase !== 'wrong') {
-          return current;
-        }
-        const now = Date.now();
-        // Prefer fallback Stockfish movetime, but cap total wait at REFUTATION_RESPONSE_BUDGET_MS.
-        if (loading && now < deadline) {
           return current;
         }
         if (refutationUci) {
@@ -190,16 +257,35 @@ export function useMissSequence(
     const { loading } = refutationRef.current;
 
     if (now >= earliestShow && (!loading || now >= deadline)) {
-      advanceWhenReady();
+      advanceWhenReady('immediate');
       return undefined;
     }
 
     const nextAt = now < earliestShow ? earliestShow : deadline;
-    const timer = window.setTimeout(advanceWhenReady, Math.max(0, nextAt - now));
-    return () => window.clearTimeout(timer);
+    const delayMs = Math.max(0, nextAt - now);
+    const scheduledAtMs = performance.now();
+    missDiag('timer:scheduled', {
+      delayMs,
+      nextAt: now < earliestShow ? 'earliestShow' : 'deadline',
+      loading,
+      refutationBudgetMs,
+      wrongHoldMs,
+    });
+    timer = window.setTimeout(
+      () => advanceWhenReady('timer', scheduledAtMs + delayMs),
+      delayMs,
+    );
+    return () => {
+      missDiag('timer:cleared', { delayMs });
+      if (timer !== undefined) {
+        window.clearTimeout(timer);
+      }
+    };
   }, [
+    missRetryPolicy,
     refutation.loading,
     refutation.refutationUci,
+    refutationBudgetMs,
     sequenceKey,
     sequencePhase,
     wrongHoldMs,
@@ -235,6 +321,7 @@ export function useMissSequence(
     allowRetryOnIncorrect,
     maxMissAttempts,
     clearAfterRefutation,
+    missRetryPolicy,
     refutationPauseMs,
     sequenceKey,
     sequencePhase,

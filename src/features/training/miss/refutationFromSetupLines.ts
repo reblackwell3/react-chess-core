@@ -16,9 +16,9 @@ export const DEFAULT_SETUP_REFUTATION_TARGET_DEPTH = 10;
 export const SETUP_REFUTATION_MIN_DEPTH = 4;
 
 export type SetupRefutationCacheOptions = {
-  /** Wrong-move multipv line must reach at least this depth. */
+  /** @deprecated Partial MultiPV lines are accepted without a depth gate. */
   targetDepth?: number;
-  /** @deprecated Ignored — wrong-line depth is the readiness gate, not engine idle. */
+  /** @deprecated Partial MultiPV lines are accepted while the engine is analyzing. */
   requireIdle?: boolean;
 };
 
@@ -63,24 +63,21 @@ const evaluationUsable = (evaluation: EngineEvaluation): boolean =>
 
 /**
  * Instant refutation from play-time multipv on the setup position.
- * Requires the wrong-move line to finish searching to the play-time target depth.
+ * Accepts an in-progress line once it contains the wrong move and its reply.
  */
 export function tryRefutationFromSetupEvaluation(
   setupFen: string,
   evaluation: EngineEvaluation,
   attemptedUci: string,
   expectedUci: string | null,
-  cacheOptions: SetupRefutationCacheOptions = {},
+  _cacheOptions: SetupRefutationCacheOptions = {},
 ): SetupRefutationResult | null {
-  const targetDepth =
-    cacheOptions.targetDepth ?? DEFAULT_SETUP_REFUTATION_TARGET_DEPTH;
-
   if (!evaluationUsable(evaluation)) {
     return null;
   }
 
   const wrongLine = findSetupLineByFirstMove(evaluation.lines, attemptedUci);
-  if (!wrongLine || wrongLine.depth < targetDepth || wrongLine.pv.length < 2) {
+  if (!wrongLine || wrongLine.pv.length < 2) {
     return null;
   }
 

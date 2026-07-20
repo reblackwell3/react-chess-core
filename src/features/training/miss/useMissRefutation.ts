@@ -3,6 +3,7 @@ import { uciPvToSan } from '../../engine/formatEvaluation';
 import { usePlayTimeEngineEvaluation } from '../../engine/PlayTimeEngineContext';
 import { useAnalysisEngine } from '../../engine/useAnalysisEngine';
 import type { AnalysisEngineOptions } from '../../engine/types';
+import { missDiag } from './missDiag';
 import {
   fenAfterUci,
   lineEvalCpForGap,
@@ -114,13 +115,32 @@ export function useMissRefutation(
       return undefined;
     }
     let cancelled = false;
+    missDiag('refutation:get:start', {
+      setupFen,
+      attemptedUci,
+      cacheHit,
+    });
+    const startedAt = performance.now();
     resolveKnownRefutation(setupFen, attemptedUci)
       .then((value) => {
+        missDiag('refutation:get:end', {
+          ok: true,
+          cancelled,
+          hit: Boolean(value?.uci),
+          durationMs: Math.round(performance.now() - startedAt),
+          refutationUci: value?.uci ?? null,
+        });
         if (!cancelled) {
           setFetchedKnown({ key: lookupKey, value });
         }
       })
-      .catch(() => {
+      .catch((error: unknown) => {
+        missDiag('refutation:get:end', {
+          ok: false,
+          cancelled,
+          durationMs: Math.round(performance.now() - startedAt),
+          error: error instanceof Error ? error.message : String(error),
+        });
         if (!cancelled) {
           setFetchedKnown({ key: lookupKey, value: null });
         }
@@ -200,6 +220,107 @@ export function useMissRefutation(
     enabled: runCorrectEngine,
     shared: false,
   });
+
+  const prevWrongStatusRef = useRef(wrongEvaluation.status);
+  const prevCorrectStatusRef = useRef(correctEvaluation.status);
+  const loggedCacheHitKeyRef = useRef<string | null>(null);
+  const prevFallbackFlagsRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!enabled || !cacheHit || !lookupKey) {
+      return;
+    }
+    if (loggedCacheHitKeyRef.current === lookupKey) {
+      return;
+    }
+    loggedCacheHitKeyRef.current = lookupKey;
+    missDiag('engine:cache-hit', {
+      refutationUci: cacheResult?.refutationUci ?? null,
+      expectedInSetupCache,
+    });
+  }, [
+    cacheHit,
+    cacheResult?.refutationUci,
+    enabled,
+    expectedInSetupCache,
+    lookupKey,
+  ]);
+
+  useEffect(() => {
+    if (!enabled) {
+      loggedCacheHitKeyRef.current = null;
+      prevFallbackFlagsRef.current = null;
+    }
+  }, [enabled]);
+
+  useEffect(() => {
+    if (!runWrongEngine) {
+      prevWrongStatusRef.current = wrongEvaluation.status;
+      return;
+    }
+    if (prevWrongStatusRef.current !== wrongEvaluation.status) {
+      missDiag('engine:wrong:status', {
+        from: prevWrongStatusRef.current,
+        to: wrongEvaluation.status,
+        depth: wrongEvaluation.depth,
+        lines: wrongEvaluation.lines.length,
+        pv0: wrongEvaluation.lines[0]?.pv?.[0] ?? null,
+      });
+      prevWrongStatusRef.current = wrongEvaluation.status;
+    }
+  }, [
+    runWrongEngine,
+    wrongEvaluation.depth,
+    wrongEvaluation.lines,
+    wrongEvaluation.status,
+  ]);
+
+  useEffect(() => {
+    if (!runCorrectEngine) {
+      prevCorrectStatusRef.current = correctEvaluation.status;
+      return;
+    }
+    if (prevCorrectStatusRef.current !== correctEvaluation.status) {
+      missDiag('engine:correct:status', {
+        from: prevCorrectStatusRef.current,
+        to: correctEvaluation.status,
+        depth: correctEvaluation.depth,
+        lines: correctEvaluation.lines.length,
+        shared: false,
+      });
+      prevCorrectStatusRef.current = correctEvaluation.status;
+    }
+  }, [
+    correctEvaluation.depth,
+    correctEvaluation.lines.length,
+    correctEvaluation.status,
+    runCorrectEngine,
+  ]);
+
+  useEffect(() => {
+    if (!enabled) {
+      return;
+    }
+    const key = `${runWrongEngine}:${runCorrectEngine}:${expectedInSetupCache}:${cacheHit}:${fallbackEngine.movetime ?? ''}`;
+    if (prevFallbackFlagsRef.current === key) {
+      return;
+    }
+    prevFallbackFlagsRef.current = key;
+    missDiag('engine:fallback:enabled', {
+      runWrongEngine,
+      runCorrectEngine,
+      expectedInSetupCache,
+      cacheHit,
+      movetime: fallbackEngine.movetime ?? null,
+    });
+  }, [
+    cacheHit,
+    enabled,
+    expectedInSetupCache,
+    fallbackEngine.movetime,
+    runCorrectEngine,
+    runWrongEngine,
+  ]);
 
   useEffect(() => {
     if (!enabled || !playTime) {
